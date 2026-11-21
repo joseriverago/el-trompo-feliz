@@ -1,0 +1,215 @@
+"Summary","Issue Type","Parent","Story Points","Priority","Fix Version","Labels","Description"
+"HU-01 Ver el catálogo de juguetes","Story","ETF-1","3","Highest","v1.0","sprint-1","Como visitante, quiero ver el listado de juguetes de la tienda, para conocer qué juguetes puedo comprar.
+
+Criterios de aceptación:
+1. Dado que existen juguetes registrados, cuando ingreso al catálogo, entonces veo de cada juguete su imagen, nombre, precio en soles (S/ con dos decimales), categoría y edad recomendada.
+2. Dado que un juguete tiene stock 0, cuando aparece en el catálogo, entonces se muestra con la etiqueta «Agotado» y sin el botón «Agregar al carrito».
+3. Dado que no hay juguetes registrados, cuando ingreso al catálogo, entonces veo el mensaje «Por ahora no hay juguetes disponibles».
+
+Caso de uso: CU-01 Consultar catálogo
+Release: v1.0 | Sprint previsto: 1"
+"HU-02 Ver el detalle de un juguete","Story","ETF-1","2","Highest","v1.0","sprint-1","Como visitante, quiero ver la página de detalle de un juguete, para conocer su descripción y disponibilidad antes de comprarlo.
+
+Criterios de aceptación:
+1. Dado que estoy en el catálogo, cuando hago clic en un juguete, entonces veo su página de detalle con imagen, nombre, descripción, precio, categoría, edad recomendada y unidades disponibles.
+2. Dado que el juguete tiene stock 0, cuando veo su detalle, entonces se muestra «Agotado» y no puedo agregarlo al carrito.
+3. Dado que ingreso la dirección de un juguete que no existe, cuando carga la página, entonces veo el mensaje «Juguete no encontrado» y un enlace para volver al catálogo.
+
+Caso de uso: CU-02 Ver detalle de juguete
+Release: v1.0 | Sprint previsto: 1"
+"HU-03 Registrarme como cliente","Story","ETF-2","3","Highest","v1.0","sprint-1","Como visitante, quiero crear una cuenta con mi nombre, correo y contraseña, para poder comprar y consultar mis pedidos.
+
+Criterios de aceptación:
+1. Dado que completo mi nombre, un correo válido y una contraseña de al menos 8 caracteres, cuando envío el formulario, entonces se crea mi cuenta como cliente y quedo con la sesión iniciada.
+2. Dado que el correo ya está registrado, cuando envío el formulario, entonces veo el mensaje «Este correo ya está registrado» y no se crea otra cuenta.
+3. Dado que dejo campos vacíos o el correo no es válido, cuando envío el formulario, entonces veo qué campo debo corregir.
+4. Dado que se creó mi cuenta, cuando se revisa la base de datos, entonces la contraseña está guardada cifrada con bcrypt y nunca en texto plano.
+
+Caso de uso: CU-04 Registrarse
+Release: v1.0 | Sprint previsto: 1"
+"HU-04 Iniciar sesión","Story","ETF-2","3","Highest","v1.0","sprint-1","Como cliente, quiero iniciar sesión con mi correo y contraseña, para usar mi carrito y ver mis pedidos.
+
+Criterios de aceptación:
+1. Dado que ingreso un correo y una contraseña correctos, cuando inicio sesión, entonces veo mi nombre en la barra de navegación y puedo usar el carrito.
+2. Dado que el correo o la contraseña son incorrectos, cuando intento iniciar sesión, entonces veo el mensaje genérico «Correo o contraseña incorrectos», sin indicar cuál de los dos falló.
+3. Dado que inicié sesión, cuando recargo la página o navego por la tienda, entonces mi sesión se mantiene.
+
+Caso de uso: CU-05 Iniciar sesión
+Release: v1.0 | Sprint previsto: 1"
+"HU-05 Agregar un juguete al carrito","Story","ETF-3","3","Highest","v1.0","sprint-1","Como cliente, quiero agregar juguetes a mi carrito, para comprar varios juguetes en un solo pedido.
+
+Criterios de aceptación:
+1. Dado que inicié sesión y el juguete tiene stock, cuando presiono «Agregar al carrito» en el catálogo o en el detalle, entonces el juguete se agrega con cantidad 1 y el contador del carrito aumenta.
+2. Dado que el juguete ya está en mi carrito, cuando lo agrego otra vez, entonces su cantidad aumenta en 1, sin duplicar la línea.
+3. Dado que la cantidad en mi carrito ya es igual al stock disponible, cuando intento agregar otra unidad, entonces veo el mensaje «Solo quedan N unidades» y la cantidad no cambia.
+4. Dado que no he iniciado sesión, cuando presiono «Agregar al carrito», entonces se me lleva a la página de inicio de sesión.
+
+Caso de uso: CU-07 Agregar producto al carrito
+Release: v1.0 | Sprint previsto: 1"
+"HU-06 Cambiar cantidades y quitar juguetes del carrito","Story","ETF-3","3","High","v1.0","sprint-1","Como cliente, quiero cambiar la cantidad de cada juguete o quitarlo de mi carrito, para ajustar mi compra antes de pagar.
+
+Criterios de aceptación:
+1. Dado que tengo un juguete en el carrito, cuando aumento o disminuyo su cantidad, entonces se guarda la nueva cantidad, que no puede ser menor que 1 ni mayor que el stock disponible.
+2. Dado que tengo un juguete en el carrito, cuando presiono «Quitar», entonces el juguete desaparece del carrito.
+3. Dado que mi carrito queda vacío, cuando lo abro, entonces veo el mensaje «Tu carrito está vacío» y un enlace al catálogo.
+
+Caso de uso: CU-08 Gestionar carrito
+Release: v1.0 | Sprint previsto: 1"
+"HU-07 Ver subtotales y total del carrito","Story","ETF-3","2","High","v1.0","sprint-1","Como cliente, quiero ver el subtotal de cada juguete y el total de mi carrito, para saber cuánto voy a pagar.
+
+Criterios de aceptación:
+1. Dado que tengo juguetes en el carrito, cuando lo abro, entonces cada línea muestra el precio unitario, la cantidad y el subtotal (precio × cantidad), y al final se muestra el total (suma de subtotales).
+2. Dado que cambio una cantidad o quito un juguete, cuando se actualiza el carrito, entonces los subtotales y el total se recalculan de inmediato.
+3. Dado que cierro el navegador y vuelvo a entrar con mi cuenta, cuando abro el carrito, entonces encuentro los mismos juguetes y cantidades, porque el carrito se guarda en la base de datos.
+
+Caso de uso: CU-08 Gestionar carrito
+Release: v1.0 | Sprint previsto: 1"
+"HU-08 Ingresar los datos de entrega y generar el pedido","Story","ETF-4","5","Highest","v1.0","sprint-1","Como cliente, quiero ingresar los datos de entrega y confirmar mi carrito, para generar mi pedido.
+
+Criterios de aceptación:
+1. Dado que tengo juguetes en el carrito, cuando presiono «Comprar», entonces veo un formulario de entrega (nombre de quien recibe, teléfono, dirección, distrito y referencia opcional) junto al resumen del carrito y el total.
+2. Dado que falta un dato obligatorio o el teléfono no tiene 9 dígitos, cuando presiono «Continuar al pago», entonces veo qué campo debo corregir y no se genera el pedido.
+3. Dado que los datos son válidos y hay stock suficiente de cada juguete, cuando presiono «Continuar al pago», entonces se genera un pedido en estado Pendiente con un número de pedido único, se guarda el precio vigente de cada juguete, mi carrito queda vacío y paso a la página de pago.
+4. Dado que la cantidad de algún juguete supera su stock actual, cuando presiono «Continuar al pago», entonces veo qué juguete debo ajustar y no se genera el pedido.
+
+Caso de uso: CU-09 Realizar compra
+Release: v1.0 | Sprint previsto: 1"
+"HU-09 Pagar el pedido con pago simulado","Story","ETF-4","5","Highest","v1.0","sprint-1","Como cliente, quiero pagar mi pedido con una tarjeta simulada, para completar la compra sin usar una pasarela de pago real.
+
+Criterios de aceptación:
+1. Dado que tengo un pedido Pendiente, cuando ingreso una tarjeta de 16 dígitos que no termina en 0000, el nombre del titular, un vencimiento no pasado y un CVV de 3 dígitos, entonces el pago se aprueba, el pedido pasa a Pagado, se descuenta del stock la cantidad de cada juguete y veo la confirmación con el número de pedido.
+2. Dado que la tarjeta termina en 0000 (tarjeta de rechazo de prueba), cuando pago, entonces veo «Pago rechazado», el pedido sigue Pendiente, el stock no cambia y puedo reintentar.
+3. Dado que otro cliente compró las últimas unidades de un juguete antes de mi pago, cuando pago, entonces veo qué juguete ya no tiene stock suficiente, el pedido sigue Pendiente y no se descuenta nada, porque el pago y el descuento del stock ocurren en una sola transacción.
+4. Dado que el pedido ya está Pagado, cuando intento pagarlo otra vez (por ejemplo, con doble clic), entonces no se repite el pago ni el descuento del stock.
+5. Dado que se procesó un pago, cuando se revisa la base de datos, entonces solo se guardan los últimos 4 dígitos de la tarjeta y el resultado del pago, nunca el número completo ni el CVV.
+
+Caso de uso: CU-09 Realizar compra, CU-10 Procesar pago simulado
+Release: v1.0 | Sprint previsto: 1"
+"HU-10 Consultar mi historial de pedidos","Story","ETF-5","2","High","v2.0","sprint-2","Como cliente, quiero ver la lista de mis pedidos, para hacer seguimiento a mis compras.
+
+Criterios de aceptación:
+1. Dado que tengo pedidos, cuando entro a «Mis pedidos», entonces veo cada pedido con su número, fecha, total y estado (Pendiente, Pagado, Enviado o Entregado), del más reciente al más antiguo.
+2. Dado que otros clientes también tienen pedidos, cuando entro a «Mis pedidos», entonces solo veo los míos.
+3. Dado que todavía no tengo pedidos, cuando entro a «Mis pedidos», entonces veo el mensaje «Todavía no tienes pedidos» y un enlace al catálogo.
+
+Caso de uso: CU-11 Consultar mis pedidos
+Release: v2.0 | Sprint previsto: 2"
+"HU-11 Ver el detalle y el estado de un pedido","Story","ETF-5","2","High","v2.0","sprint-2","Como cliente, quiero ver el detalle de uno de mis pedidos, para saber qué compré y en qué estado está.
+
+Criterios de aceptación:
+1. Dado que estoy en «Mis pedidos», cuando abro un pedido, entonces veo sus juguetes, cantidades, precios, total, datos de entrega y estado actual.
+2. Dado que el pedido está Pendiente, cuando veo su detalle, entonces tengo el botón «Pagar ahora», que me lleva a la página de pago.
+3. Dado que intento abrir el pedido de otro cliente cambiando la dirección de la página, cuando carga, entonces veo «Pedido no encontrado» y no se muestran sus datos.
+
+Caso de uso: CU-11 Consultar mis pedidos
+Release: v2.0 | Sprint previsto: 2"
+"HU-12 Registrar y editar juguetes","Story","ETF-6","5","High","v2.0","sprint-2","Como administrador, quiero registrar y editar juguetes con todos sus datos, para mantener actualizado el catálogo.
+
+Criterios de aceptación:
+1. Dado que inicié sesión como administrador, cuando entro a «Administración > Juguetes», entonces veo la lista de juguetes con su nombre, categoría, precio y stock, y un botón «Nuevo juguete».
+2. Dado que completo nombre, descripción, precio mayor que 0, imagen (URL), categoría, edad mínima y máxima recomendadas y stock inicial (entero mayor o igual a 0), cuando guardo, entonces el juguete se registra y aparece en el catálogo.
+3. Dado que edito un juguete, cuando guardo los cambios, entonces el catálogo muestra los datos nuevos.
+4. Dado que un dato es inválido (precio menor o igual a 0, edad mínima mayor que la máxima o campos vacíos), cuando guardo, entonces veo el error y no se guarda nada.
+5. Dado que un usuario que no es administrador intenta entrar a la administración, cuando carga la página, entonces se le niega el acceso.
+
+Caso de uso: CU-12 Gestionar productos
+Release: v2.0 | Sprint previsto: 2"
+"HU-13 Actualizar el stock","Story","ETF-6","3","High","v2.0","sprint-2","Como administrador, quiero actualizar el stock de cada juguete, para que la tienda no ofrezca juguetes agotados.
+
+Criterios de aceptación:
+1. Dado que entro a «Administración > Inventario», cuando carga la página, entonces veo cada juguete con su stock actual, y los que tienen 5 unidades o menos aparecen resaltados como «Stock bajo».
+2. Dado que ingreso una nueva cantidad (entero mayor o igual a 0), cuando la guardo, entonces el stock se actualiza y el catálogo muestra la nueva disponibilidad.
+3. Dado que pongo el stock de un juguete en 0, cuando un cliente lo ve en el catálogo, entonces aparece como «Agotado».
+4. Dado que ingreso un valor negativo o que no es un número entero, cuando guardo, entonces veo un error y el stock no cambia.
+
+Caso de uso: CU-14 Actualizar stock
+Release: v2.0 | Sprint previsto: 2"
+"HU-14 Consultar los pedidos de la tienda","Story","ETF-7","3","High","v2.0","sprint-2","Como administrador, quiero ver todos los pedidos y filtrarlos por estado, para organizar los despachos.
+
+Criterios de aceptación:
+1. Dado que entro a «Administración > Pedidos», cuando carga la página, entonces veo todos los pedidos con su número, cliente, fecha, total y estado, del más reciente al más antiguo.
+2. Dado que elijo un estado en el filtro, cuando se aplica, entonces solo veo los pedidos en ese estado.
+3. Dado que abro un pedido, cuando carga su detalle, entonces veo sus juguetes, cantidades, total y datos de entrega.
+
+Caso de uso: CU-15 Gestionar pedidos
+Release: v2.0 | Sprint previsto: 2"
+"HU-15 Cambiar el estado de un pedido","Story","ETF-7","3","High","v2.0","sprint-2","Como administrador, quiero cambiar el estado de un pedido, para informar al cliente cómo avanza su entrega.
+
+Criterios de aceptación:
+1. Dado que un pedido está Pagado, cuando lo marco como Enviado, entonces su estado cambia y el cliente lo ve actualizado en «Mis pedidos».
+2. Dado que un pedido está Enviado, cuando lo marco como Entregado, entonces su estado cambia a Entregado.
+3. Dado que un pedido está Pendiente, cuando intento marcarlo como Enviado, entonces el sistema no lo permite, porque el pedido solo avanza en el orden Pendiente → Pagado → Enviado → Entregado y el paso a Pagado ocurre únicamente con el pago.
+4. Dado que un pedido está Entregado, cuando veo sus acciones, entonces ya no puedo cambiar su estado.
+
+Caso de uso: CU-15 Gestionar pedidos
+Release: v2.0 | Sprint previsto: 2"
+"HU-16 Buscar juguetes por nombre","Story","ETF-1","2","Medium","v2.0","sprint-2","Como visitante, quiero buscar juguetes por su nombre, para encontrar rápido el juguete que busco.
+
+Criterios de aceptación:
+1. Dado que escribo parte del nombre de un juguete (por ejemplo, «pelu»), cuando busco, entonces veo los juguetes cuyo nombre contiene ese texto, sin importar mayúsculas o minúsculas.
+2. Dado que ningún juguete coincide, cuando busco, entonces veo el mensaje «No encontramos juguetes con ese nombre».
+3. Dado que borro el texto de búsqueda, cuando busco, entonces vuelvo a ver todo el catálogo.
+
+Caso de uso: CU-03 Buscar y filtrar juguetes
+Release: v2.0 | Sprint previsto: 2"
+"HU-17 Filtrar juguetes por categoría, edad y precio","Story","ETF-1","5","Medium","v2.0","sprint-2","Como visitante, quiero filtrar el catálogo por categoría, rango de edad y rango de precio, para ver solo los juguetes adecuados para quien los recibirá.
+
+Criterios de aceptación:
+1. Dado que elijo una categoría, cuando aplico el filtro, entonces solo veo los juguetes de esa categoría.
+2. Dado que elijo un rango de edad (0–2, 3–5, 6–8, 9–12 o 13 años a más), cuando aplico el filtro, entonces veo los juguetes cuya edad recomendada coincide con ese rango.
+3. Dado que ingreso un precio mínimo, un precio máximo o ambos, cuando aplico el filtro, entonces solo veo juguetes con precio dentro de ese rango; si el mínimo es mayor que el máximo, veo un aviso.
+4. Dado que combino la búsqueda con los filtros, cuando los aplico, entonces se cumplen todos a la vez, y con «Limpiar filtros» vuelvo al catálogo completo.
+
+Caso de uso: CU-03 Buscar y filtrar juguetes
+Release: v2.0 | Sprint previsto: 2"
+"HU-18 Cerrar sesión","Story","ETF-2","1","Medium","v2.0","sprint-2","Como cliente, quiero cerrar mi sesión, para que nadie más use mi cuenta en este dispositivo.
+
+Criterios de aceptación:
+1. Dado que inicié sesión, cuando presiono «Cerrar sesión», entonces mi sesión termina y vuelvo al catálogo como visitante.
+2. Dado que cerré sesión, cuando intento entrar a «Mis pedidos» o al carrito, entonces se me lleva a la página de inicio de sesión.
+
+Caso de uso: CU-06 Cerrar sesión
+Release: v2.0 | Sprint previsto: 2"
+"HU-19 Gestionar categorías","Story","ETF-6","3","Medium","v2.0","sprint-2","Como administrador, quiero registrar, editar y eliminar categorías, para organizar el catálogo de juguetes.
+
+Criterios de aceptación:
+1. Dado que entro a «Administración > Categorías», cuando registro una categoría con un nombre que no existe, entonces aparece en la lista y en el filtro del catálogo.
+2. Dado que el nombre ya existe, cuando intento registrar la categoría, entonces veo el mensaje «Ya existe una categoría con ese nombre».
+3. Dado que edito el nombre de una categoría, cuando guardo, entonces los juguetes de esa categoría muestran el nombre nuevo.
+4. Dado que una categoría tiene juguetes asignados, cuando intento eliminarla, entonces el sistema no lo permite y me indica cuántos juguetes debo reasignar; si no tiene juguetes, se elimina.
+
+Caso de uso: CU-13 Gestionar categorías
+Release: v2.0 | Sprint previsto: 2"
+"HU-20 Eliminar juguetes","Story","ETF-6","2","Medium","v2.0","sprint-2","Como administrador, quiero eliminar los juguetes que la tienda ya no vende, para que no aparezcan en el catálogo.
+
+Criterios de aceptación:
+1. Dado que presiono «Eliminar» en un juguete, cuando confirmo en el mensaje de confirmación, entonces el juguete deja de aparecer en el catálogo y ya no se puede agregar al carrito; si estaba en el carrito de un cliente, se le avisa al intentar comprar.
+2. Dado que el juguete aparece en pedidos anteriores, cuando lo elimino, entonces esos pedidos conservan su nombre, cantidad y precio, porque el juguete se desactiva y no se borra de la base de datos.
+3. Dado que cancelo el mensaje de confirmación, cuando vuelvo a la lista, entonces el juguete sigue igual.
+
+Caso de uso: CU-12 Gestionar productos
+Release: v2.0 | Sprint previsto: 2"
+"T-01 Crear la estructura del repositorio","Task","","","Medium","v1.0","sprint-1","Proyecto frontend (Next.js + Tailwind CSS) en frontend/, proyecto backend (NestJS) en backend/, carpeta docs/, README y .gitignore.
+
+Release: v1.0 | Sprint previsto: 1"
+"T-02 Conectar el backend a PostgreSQL (Neon) y cargar datos semilla","Task","","","Medium","v1.0","sprint-1","Conexión con TypeORM mediante la variable DATABASE_URL; datos semilla: categorías, juguetes (uno con stock 0 y otros con stock bajo), un administrador y un cliente de prueba.
+
+Release: v1.0 | Sprint previsto: 1"
+"T-03 Desplegar el frontend en Vercel y el backend en Render","Task","","","Medium","v1.0","sprint-1","Primer despliegue público; después cada cambio en main se publica de forma automática.
+
+Release: v1.0 | Sprint previsto: 1"
+"T-04 Elaborar los modelos de requisitos y de análisis","Task","","","Medium","v1.0","sprint-1","Diagrama de casos de uso, diagrama de clases de análisis (boundary, control, entity) y diagrama de paquetes.
+
+Release: v1.0 | Sprint previsto: 1"
+"T-05 Elaborar el diagrama de clases de diseño y el de subsistemas","Task","","","Medium","v1.0","sprint-1","Clases de diseño con tipos, operaciones, visibilidad y relaciones refinadas; subsistemas con interfaces proporcionadas y requeridas.
+
+Release: v1.0 | Sprint previsto: 1"
+"T-06 Elaborar los diagramas de secuencia","Task","","","Medium","v2.0","sprint-2","Realización de los casos de uso Agregar producto al carrito, Realizar compra y Gestionar productos, con fragmentos alt, opt y loop.
+
+Release: v2.0 | Sprint previsto: 2"
+"T-07 Elaborar los modelos de implementación y de despliegue","Task","","","Medium","v2.0","sprint-2","Componentes y artefactos según el repositorio real; despliegue en forma de descriptor y de instancia según Vercel, Render y Neon.
+
+Release: v2.0 | Sprint previsto: 2"
+"T-08 Completar el README y las evidencias de los sprints","Task","","","Medium","v2.0","sprint-2","README final (descripción, tecnologías, instalación, ejecución, integrante y URL pública), Sprint Review, Retrospectiva, burndown y velocidad.
+
+Release: v2.0 | Sprint previsto: 2"
