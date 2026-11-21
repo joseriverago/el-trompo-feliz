@@ -59,4 +59,10 @@ Las variables de entorno se documentan en el archivo `.env.example` de cada proy
 
 ## Aplicación publicada
 
-Pendiente: se publica en la tarea ETF-30.
+| Parte | URL |
+|---|---|
+| Tienda (frontend en Vercel) | https://el-trompo-feliz-flax.vercel.app |
+| API (backend en Render) | https://el-trompo-feliz-api.onrender.com |
+| Estado de la API y de la base de datos | https://el-trompo-feliz-api.onrender.com/salud |
+
+Cada cambio integrado en `main` se publica de forma automática en Vercel y en Render. En el plan gratuito de Render, la primera petición después de 15 minutos sin visitas tarda alrededor de un minuto.
