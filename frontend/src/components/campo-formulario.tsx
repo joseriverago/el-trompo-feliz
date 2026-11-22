@@ -9,6 +9,11 @@ interface Props {
   onCambio: (valor: string) => void;
   error?: string;
   ayuda?: string;
+  /** Teclado del celular: «numeric» muestra solo números. */
+  modoTeclado?: "numeric" | "text";
+  largoMaximo?: number;
+  /** Ejemplo dentro del campo vacío, por ejemplo «MM/AA». */
+  marcador?: string;
   ref?: Ref<HTMLInputElement>;
 }
 
@@ -22,6 +27,9 @@ export function CampoFormulario({
   onCambio,
   error,
   ayuda,
+  modoTeclado,
+  largoMaximo,
+  marcador,
   ref,
 }: Props) {
   const idMensaje = `${campo}-mensaje`;
@@ -35,12 +43,15 @@ export function CampoFormulario({
         name={campo}
         type={tipo}
         autoComplete={autocompletar}
+        inputMode={modoTeclado}
+        maxLength={largoMaximo}
+        placeholder={marcador}
         value={valor}
         onChange={(evento) => onCambio(evento.target.value)}
         ref={ref}
         aria-invalid={error ? true : undefined}
         aria-describedby={error || ayuda ? idMensaje : undefined}
-        className={`h-11 rounded-lg border bg-white px-3 text-zinc-950 outline-none transition-colors focus:ring-2 focus:ring-amber-400 dark:bg-zinc-900 dark:text-zinc-50 ${
+        className={`h-11 rounded-lg border bg-white px-3 text-zinc-950 outline-none transition-colors placeholder:text-zinc-400 focus:ring-2 focus:ring-amber-400 dark:bg-zinc-900 dark:text-zinc-50 ${
           error ? "border-red-500" : "border-zinc-300 dark:border-zinc-700"
         }`}
       />
