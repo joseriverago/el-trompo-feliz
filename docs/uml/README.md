@@ -60,7 +60,7 @@ Se dividen en tres vistas para que cada una se lea bien. **B** = frontera (panta
 |---|---|---|---|---|
 | Catálogo | CU-01, CU-02, CU-03 | ControlCatalogo | `backend/src/juguetes` (hecho), `categorias` | `/`, `/juguetes/[id]` (hechas) |
 | Usuarios | CU-04, CU-05, CU-06 | ControlCuentas | `backend/src/usuarios`, `auth` (registro, inicio de sesión y `JwtAuthGuard` hechos) | `/registro`, `/iniciar-sesion` (hechas) |
-| Carrito | CU-07, CU-08 | ControlCarrito | `backend/src/carrito` (agregar, cambiar cantidad y quitar hechos) | botón «Agregar al carrito», contador y `/carrito` (hechos) |
+| Carrito | CU-07, CU-08 | ControlCarrito | `backend/src/carrito` (hecho) | botón «Agregar al carrito», contador y `/carrito` con subtotales y total (hechos) |
 | Pedidos | CU-09, CU-11 | ControlPedidos | `backend/src/pedidos` | `/checkout`, `/mis-pedidos` |
 | Pagos | CU-10 | ControlPago | `backend/src/pagos` | `/pago/[numero]` |
 | Administración | CU-12 … CU-15 | ControlAdminCatalogo, ControlAdminPedidos | rutas protegidas para el rol ADMINISTRADOR en `juguetes`, `categorias` y `pedidos` | `/admin/...` |
@@ -79,7 +79,7 @@ Tres vistas: el modelo de dominio (entidades de TypeORM) y los controllers y ser
 - **Controller + service.** Cada módulo de NestJS tiene un controller, que expone las rutas HTTP, y un service, que aplica las reglas del negocio usando el `Repository` de TypeORM.
 - **Seguridad.** `JwtAuthGuard` identifica al usuario a partir del JWT, y `RolesGuard` deja pasar solo al rol ADMINISTRADOR. El `usuarioId` siempre sale del token, nunca del cuerpo de la petición.
 - **Pago en una transacción.** `PagosService.pagar()` valida la tarjeta, verifica el stock, guarda el `Pago`, descuenta el stock y marca el pedido como Pagado en una sola transacción.
-- **Ya implementado.** `JuguetesController` y `JuguetesService` con `listarCatalogo` y `obtenerDetalle` (HU-01, HU-02); `AuthController`, `AuthService` y `UsuariosService` con `registrar` (HU-03) e `iniciarSesion` (HU-04); `JwtAuthGuard`, `AuthService.verificarToken`, `JuguetesService.verificarStock` y `CarritoController`/`CarritoService` con `obtener` y `agregar` (HU-05), y con `cambiarCantidad` y `quitar`/`quitarItem` (HU-06). El resto de nombres guía las próximas historias.
+- **Ya implementado.** `JuguetesController` y `JuguetesService` con `listarCatalogo` y `obtenerDetalle` (HU-01, HU-02); `AuthController`, `AuthService` y `UsuariosService` con `registrar` (HU-03) e `iniciarSesion` (HU-04); `JwtAuthGuard`, `AuthService.verificarToken`, `JuguetesService.verificarStock` y `CarritoController`/`CarritoService` con `obtener` y `agregar` (HU-05), y con `cambiarCantidad` y `quitar`/`quitarItem` (HU-06); `Carrito.calcularTotal` e `ItemCarrito.calcularSubtotal` (HU-07). El resto de nombres guía las próximas historias.
 - **El hash no sale de la base de datos.** La columna `contrasena_hash` tiene `select: false`: solo `UsuariosService.buscarConContrasena` la lee, y solo para el inicio de sesión.
 
 ## 5. Subsistemas con interfaces

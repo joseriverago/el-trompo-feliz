@@ -46,8 +46,8 @@ interface Props {
 }
 
 /**
- * Una línea de la página del carrito (HU-06): el juguete, su precio, los botones para
- * cambiar la cantidad entre 1 y el stock disponible, y «Quitar».
+ * Una línea de la página del carrito: el juguete, su precio unitario, los botones para
+ * cambiar la cantidad entre 1 y el stock disponible y «Quitar» (HU-06), y el subtotal (HU-07).
  */
 export function LineaCarrito({ item, token, onRecargar }: Props) {
   const [ocupado, setOcupado] = useState<"cantidad" | "quitar" | null>(null);
@@ -92,7 +92,7 @@ export function LineaCarrito({ item, token, onRecargar }: Props) {
         <img
           src={item.imagenUrl}
           alt={item.nombre}
-          className="h-20 w-28 rounded-xl bg-zinc-100 object-cover dark:bg-zinc-800"
+          className="h-16 w-20 rounded-xl bg-zinc-100 object-cover sm:h-20 sm:w-28 dark:bg-zinc-800"
         />
       </Link>
 
@@ -108,7 +108,8 @@ export function LineaCarrito({ item, token, onRecargar }: Props) {
           </p>
         </div>
 
-        <div className="flex items-center gap-5">
+        {/* En el celular, si no entra todo en una fila, el subtotal pasa a la fila de abajo. */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <div
             role="group"
             aria-label={`Cantidad de ${item.nombre}`}
@@ -144,6 +145,11 @@ export function LineaCarrito({ item, token, onRecargar }: Props) {
           >
             {ocupado === "quitar" ? "Quitando…" : "Quitar"}
           </button>
+          {/* HU-07: precio × cantidad. Lo calcula la API en céntimos, sin errores de redondeo. */}
+          <p className="ml-auto flex w-24 flex-col text-right sm:ml-0">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Subtotal</span>
+            <span className="font-semibold tabular-nums">{formatearPrecio(item.subtotal)}</span>
+          </p>
         </div>
       </div>
     </li>

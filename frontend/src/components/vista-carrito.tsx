@@ -7,6 +7,7 @@ import { IconoCarrito } from "@/components/icono-carrito";
 import { LineaCarrito } from "@/components/linea-carrito";
 import { guardarCarrito, obtenerCarrito, useCarrito } from "@/lib/carrito";
 import { ENLACE } from "@/lib/estilos";
+import { formatearPrecio } from "@/lib/juguetes";
 import { rutaIniciarSesion } from "@/lib/rutas";
 import { borrarSesion, useSesion } from "@/lib/sesion";
 
@@ -16,8 +17,9 @@ const BOTON_PRINCIPAL =
 const RUTA = "/carrito";
 
 /**
- * Contenido de la página del carrito (HU-06): cada juguete con su cantidad y «Quitar»,
- * o «Tu carrito está vacío» con un enlace al catálogo. Necesita sesión iniciada.
+ * Contenido de la página del carrito: cada juguete con su cantidad y «Quitar» (HU-06), los
+ * subtotales y el total (HU-07), o «Tu carrito está vacío» con un enlace al catálogo.
+ * Necesita sesión iniciada; el carrito se guarda en la base de datos.
  */
 export function VistaCarrito() {
   const router = useRouter();
@@ -91,17 +93,26 @@ export function VistaCarrito() {
     );
   }
 
+  const unidades = carrito.unidades === 1 ? "1 unidad" : `${carrito.unidades} unidades`;
   return (
     <section>
       <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-        {carrito.unidades === 1 ? "1 unidad" : `${carrito.unidades} unidades`} en tu carrito. Puedes cambiar
-        las cantidades o quitar juguetes antes de comprar.
+        {unidades} en tu carrito. Puedes cambiar las cantidades o quitar juguetes antes de comprar.
       </p>
       <ul className="mt-6 divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
         {carrito.items.map((item) => (
           <LineaCarrito key={item.id} item={item} token={token} onRecargar={volverALeer} />
         ))}
       </ul>
+      {/* HU-07: suma de los subtotales. Llega en cada respuesta de la API, así que cambia con cada ajuste. */}
+      <div className="mt-6 flex items-center justify-between gap-4 rounded-2xl bg-amber-50 px-5 py-4 dark:bg-zinc-900">
+        <p className="font-semibold">
+          Total <span className="text-sm font-normal text-zinc-600 dark:text-zinc-400">({unidades})</span>
+        </p>
+        <p aria-live="polite" className="text-2xl font-bold tabular-nums">
+          {formatearPrecio(carrito.total)}
+        </p>
+      </div>
       <p className="mt-6">
         <Link href="/" className={ENLACE}>
           ← Seguir comprando
