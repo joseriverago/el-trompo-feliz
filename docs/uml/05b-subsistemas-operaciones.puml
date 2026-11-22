@@ -1,0 +1,98 @@
+@startuml 05b-subsistemas-operaciones
+!include estilo.iuml
+skinparam wrapWidth 640
+skinparam nodesep 40
+skinparam ranksep 60
+hide empty members
+
+title Subsistemas e interfaces (2/2) · Operaciones de cada interfaz y clase que la realiza
+
+package "Catálogo" <<subsystem>> {
+  interface ICatalogo {
+    + listarCatalogo(filtros: FiltrosCatalogo): Promise<JugueteCatalogo[]>
+    + obtenerDetalle(id: number): Promise<JugueteDetalle>
+    + listarCategorias(): Promise<Categoria[]>
+  }
+  interface IAdminCatalogo {
+    + registrarJuguete(datos: GuardarJugueteDto): Promise<Juguete>
+    + editarJuguete(id: number, datos: GuardarJugueteDto): Promise<Juguete>
+    + desactivarJuguete(id: number): Promise<void>
+    + actualizarStock(id: number, stock: number): Promise<Juguete>
+    + crearCategoria(nombre: string): Promise<Categoria>
+    + renombrarCategoria(id: number, nombre: string): Promise<Categoria>
+    + eliminarCategoria(id: number): Promise<void>
+  }
+  interface IInventario {
+    + verificarStock(jugueteId: number, cantidad: number): Promise<Juguete>
+    + descontarStock(gestor: EntityManager, lineas: LineaStock[]): Promise<void>
+  }
+  class JuguetesService <<service>>
+  class CategoriasService <<service>>
+}
+
+package "Usuarios y autenticación" <<subsystem>> {
+  interface IAutenticacion {
+    + registrar(datos: RegistroDto): Promise<SesionDto>
+    + iniciarSesion(correo: string, contrasena: string): Promise<SesionDto>
+  }
+  interface ISesion {
+    + verificarToken(token: string): UsuarioSesion
+  }
+  class AuthService <<service>>
+}
+
+package "Carrito" <<subsystem>> {
+  interface ICarrito {
+    + obtenerCarrito(usuarioId: number): Promise<Carrito>
+    + agregarJuguete(usuarioId: number, jugueteId: number): Promise<Carrito>
+    + cambiarCantidad(usuarioId: number, itemId: number, cantidad: number): Promise<Carrito>
+    + quitarItem(usuarioId: number, itemId: number): Promise<Carrito>
+    + vaciar(gestor: EntityManager, carrito: Carrito): Promise<void>
+  }
+  class CarritoService <<service>>
+}
+
+package "Pedidos" <<subsystem>> {
+  interface IPedidos {
+    + generarPedido(usuarioId: number, datos: DatosEntregaDto): Promise<Pedido>
+    + listarMisPedidos(usuarioId: number): Promise<Pedido[]>
+    + obtenerPedido(usuarioId: number, numero: string): Promise<Pedido>
+    + marcarPagado(gestor: EntityManager, pedido: Pedido): Promise<void>
+  }
+  interface IAdminPedidos {
+    + listarTodos(estado?: EstadoPedido): Promise<Pedido[]>
+    + cambiarEstado(numero: string, nuevo: EstadoPedido): Promise<Pedido>
+  }
+  class PedidosService <<service>>
+}
+
+package "Pagos" <<subsystem>> {
+  interface IPagos {
+    + pagar(usuarioId: number, numero: string, tarjeta: TarjetaDto): Promise<Pago>
+  }
+  class PagosService <<service>>
+}
+
+JuguetesService ..|> ICatalogo
+CategoriasService ..|> ICatalogo
+JuguetesService ..|> IAdminCatalogo
+CategoriasService ..|> IAdminCatalogo
+JuguetesService ..|> IInventario
+AuthService ..|> IAutenticacion
+AuthService ..|> ISesion
+CarritoService ..|> ICarrito
+PedidosService ..|> IPedidos
+PedidosService ..|> IAdminPedidos
+PagosService ..|> IPagos
+
+' Dos filas: catálogo y usuarios arriba; carrito, pedidos y pagos abajo (enlaces ocultos, solo distribución).
+IInventario -[hidden]-> CarritoService
+IAdminCatalogo -[hidden]-> PedidosService
+ISesion -[hidden]-> PagosService
+
+legend bottom
+  • Cada interfaz la realiza un service de NestJS (flecha de realización); listarCategorias y las operaciones de categorías las realiza CategoriasService.
+  • Las operaciones que reciben un EntityManager participan en la transacción del pago: o se guarda todo o no se guarda nada.
+  • Los nombres coinciden con las clases de diseño (04b, 04c) y con el código; listarCatalogo y obtenerDetalle ya están implementadas.
+endlegend
+@enduml

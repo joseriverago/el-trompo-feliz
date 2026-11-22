@@ -1,0 +1,108 @@
+@startuml 04a-clases-diseno-dominio
+!include estilo.iuml
+skinparam wrapWidth 640
+skinparam nodesep 70
+skinparam ranksep 80
+
+title Clases de diseño (1/3) · Modelo de dominio (entidades TypeORM)
+
+enum Rol <<enumeration>> {
+  CLIENTE
+  ADMINISTRADOR
+}
+enum EstadoPedido <<enumeration>> {
+  PENDIENTE
+  PAGADO
+  ENVIADO
+  ENTREGADO
+}
+
+class Usuario <<entity>> {
+  - id: number
+  - nombre: string
+  - correo: string {unique}
+  - contrasenaHash: string
+  - rol: Rol
+  - creadoEn: Date
+  + esAdministrador(): boolean
+}
+class Categoria <<entity>> {
+  - id: number
+  - nombre: string {unique}
+}
+class Juguete <<entity>> {
+  - id: number
+  - nombre: string
+  - descripcion: string
+  - precio: number
+  - imagenUrl: string
+  - edadMinima: number
+  - edadMaxima: number
+  - stock: number
+  - activo: boolean
+  + estaAgotado(): boolean
+  + hayStockPara(cantidad: number): boolean
+  + tieneStockBajo(): boolean
+  + descontarStock(cantidad: number): void
+}
+class Carrito <<entity>> {
+  - id: number
+  - actualizadoEn: Date
+  + calcularTotal(): number
+  + buscarItem(jugueteId: number): ItemCarrito | undefined
+}
+class ItemCarrito <<entity>> {
+  - id: number
+  - cantidad: number
+  + calcularSubtotal(): number
+}
+class Pedido <<entity>> {
+  - id: number
+  - numero: string {unique}
+  - estado: EstadoPedido
+  - total: number
+  - creadoEn: Date
+  + estaPendiente(): boolean
+  + avanzarA(nuevo: EstadoPedido): void
+}
+class DetallePedido <<entity>> {
+  - id: number
+  - nombreJuguete: string
+  - precioUnitario: number
+  - cantidad: number
+  + calcularSubtotal(): number
+}
+class DatosEntrega <<embeddable>> {
+  - destinatario: string
+  - telefono: string
+  - direccion: string
+  - distrito: string
+  - referencia: string | null
+}
+class Pago <<entity>> {
+  - id: number
+  - monto: number
+  - ultimosDigitos: string
+  - aprobado: boolean
+  - creadoEn: Date
+}
+
+Usuario --> "1" Rol : rol
+Juguete "0..*" --> "1" Categoria : categoria
+Carrito "0..1" --> "1" Usuario : cliente
+Carrito "1" *-- "0..*" ItemCarrito : items
+ItemCarrito "0..*" --> "1" Juguete : juguete
+Pedido "0..*" --> "1" Usuario : cliente
+Pedido --> "1" EstadoPedido : estado
+Pedido "1" *-- "1..*" DetallePedido : detalles
+Pedido "1" *-- "1" DatosEntrega : entrega
+DetallePedido "0..*" --> "1" Juguete : juguete
+Pago "0..*" --> "1" Pedido : pedido
+
+legend bottom
+  • Cliente y Administrador del análisis se diseñan como un solo Usuario con el atributo rol: comparten registro e inicio de sesión.
+  • DatosEntrega es un objeto embebido: sus columnas viven en la tabla pedidos.
+  • DetallePedido copia nombre y precio del juguete al generar el pedido; Juguete.activo = falso lo saca del catálogo sin borrarlo.
+  • avanzarA() solo permite Pendiente → Pagado → Enviado → Entregado; Pago guarda cada intento, solo los últimos 4 dígitos.
+endlegend
+@enduml

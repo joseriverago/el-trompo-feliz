@@ -1,0 +1,92 @@
+@startuml 04b-clases-diseno-catalogo-cuentas
+!include estilo.iuml
+skinparam wrapWidth 640
+skinparam nodesep 50
+skinparam ranksep 70
+
+title Clases de diseño (2/3) · Catálogo, cuentas y seguridad (backend NestJS)
+
+class JuguetesController <<controller>> {
+  + listarCatalogo(filtros: FiltrosCatalogo): Promise<JugueteCatalogo[]>
+  + obtenerDetalle(id: number): Promise<JugueteDetalle>
+  + registrar(datos: GuardarJugueteDto): Promise<JugueteDetalle>
+  + editar(id: number, datos: GuardarJugueteDto): Promise<JugueteDetalle>
+  + eliminar(id: number): Promise<void>
+  + actualizarStock(id: number, datos: ActualizarStockDto): Promise<JugueteDetalle>
+}
+class JuguetesService <<service>> {
+  - juguetes: Repository<Juguete>
+  + listarCatalogo(filtros: FiltrosCatalogo): Promise<JugueteCatalogo[]>
+  + obtenerDetalle(id: number): Promise<JugueteDetalle>
+  + registrar(datos: GuardarJugueteDto): Promise<Juguete>
+  + editar(id: number, datos: GuardarJugueteDto): Promise<Juguete>
+  + desactivar(id: number): Promise<void>
+  + actualizarStock(id: number, stock: number): Promise<Juguete>
+  + verificarStock(jugueteId: number, cantidad: number): Promise<Juguete>
+  + descontarStock(gestor: EntityManager, lineas: LineaStock[]): Promise<void>
+}
+class CategoriasController <<controller>> {
+  + listar(): Promise<Categoria[]>
+  + crear(datos: GuardarCategoriaDto): Promise<Categoria>
+  + renombrar(id: number, datos: GuardarCategoriaDto): Promise<Categoria>
+  + eliminar(id: number): Promise<void>
+}
+class CategoriasService <<service>> {
+  - categorias: Repository<Categoria>
+  + listar(): Promise<Categoria[]>
+  + crear(nombre: string): Promise<Categoria>
+  + renombrar(id: number, nombre: string): Promise<Categoria>
+  + eliminar(id: number): Promise<void>
+}
+class AuthController <<controller>> {
+  + registrar(datos: RegistroDto): Promise<SesionDto>
+  + iniciarSesion(datos: InicioSesionDto): Promise<SesionDto>
+}
+class AuthService <<service>> {
+  - jwt: JwtService
+  + registrar(datos: RegistroDto): Promise<SesionDto>
+  + iniciarSesion(correo: string, contrasena: string): Promise<SesionDto>
+  + verificarToken(token: string): UsuarioSesion
+  - firmarToken(usuario: Usuario): string
+}
+class UsuariosService <<service>> {
+  - usuarios: Repository<Usuario>
+  + buscarPorCorreo(correo: string): Promise<Usuario | null>
+  + crearCliente(nombre: string, correo: string, contrasenaHash: string): Promise<Usuario>
+}
+class JwtAuthGuard <<guard>> {
+  + canActivate(contexto: ExecutionContext): boolean
+}
+class RolesGuard <<guard>> {
+  - rolesPermitidos: Rol[]
+  + canActivate(contexto: ExecutionContext): boolean
+}
+
+class Juguete <<entity>>
+class Categoria <<entity>>
+class Usuario <<entity>>
+hide Juguete members
+hide Categoria members
+hide Usuario members
+
+JuguetesController --> "1" JuguetesService
+CategoriasController --> "1" CategoriasService
+AuthController --> "1" AuthService
+AuthService --> "1" UsuariosService
+
+JuguetesService ..> Juguete
+CategoriasService ..> Categoria
+UsuariosService ..> Usuario
+
+JwtAuthGuard --> "1" AuthService
+JuguetesController ..> RolesGuard : <<use>>\nrutas de administración
+CategoriasController ..> RolesGuard : <<use>>
+RolesGuard ..> JwtAuthGuard : después de
+
+legend bottom
+  • Cada módulo NestJS tiene un controller (rutas HTTP) y un service (reglas del negocio); el service usa el Repository de TypeORM.
+  • La contraseña se guarda con bcrypt; el inicio de sesión devuelve un JWT que el frontend envía en la cabecera Authorization.
+  • JwtAuthGuard identifica al usuario; RolesGuard deja pasar solo al rol ADMINISTRADOR en las rutas de administración.
+  • listarCatalogo y obtenerDetalle ya están implementados (HU-01, HU-02); el resto de nombres guía las próximas historias.
+endlegend
+@enduml

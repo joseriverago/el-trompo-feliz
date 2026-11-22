@@ -7,8 +7,8 @@ Fuentes en PlantUML (`.puml`) y sus imágenes en [`png/`](png/). Cada diagrama u
 | 1 | Casos de uso | Requisitos | ETF-31 | [01-casos-de-uso](png/01-casos-de-uso.png) |
 | 2 | Clases de análisis (boundary, control, entity) | Análisis | ETF-31 | [02a catálogo y cuentas](png/02a-clases-analisis-catalogo-cuentas.png) · [02b compra](png/02b-clases-analisis-compra.png) · [02c administración](png/02c-clases-analisis-administracion.png) |
 | 3 | Paquetes | Análisis | ETF-31 | [03-paquetes](png/03-paquetes.png) |
-| 4 | Clases de diseño | Diseño | ETF-32 | |
-| 5 | Subsistemas con interfaces | Diseño | ETF-32 | |
+| 4 | Clases de diseño | Diseño | ETF-32 | [04a dominio](png/04a-clases-diseno-dominio.png) · [04b catálogo y cuentas](png/04b-clases-diseno-catalogo-cuentas.png) · [04c compra](png/04c-clases-diseno-compra.png) |
+| 5 | Subsistemas con interfaces | Diseño | ETF-32 | [05a interfaces](png/05a-subsistemas-interfaces.png) · [05b operaciones](png/05b-subsistemas-operaciones.png) |
 | 6 | Secuencia: Agregar producto al carrito, Realizar compra y Gestionar productos | Diseño | ETF-33 | |
 | 7 | Componentes y artefactos | Implementación | ETF-34 | |
 | 8 | Despliegue (descriptor) | Despliegue | ETF-34 | |
@@ -64,3 +64,42 @@ Se dividen en tres vistas para que cada una se lea bien. **B** = frontera (panta
 | Pedidos | CU-09, CU-11 | ControlPedidos | `backend/src/pedidos` | `/checkout`, `/mis-pedidos` |
 | Pagos | CU-10 | ControlPago | `backend/src/pagos` | `/pago/[numero]` |
 | Administración | CU-12 … CU-15 | ControlAdminCatalogo, ControlAdminPedidos | rutas protegidas para el rol ADMINISTRADOR en `juguetes`, `categorias` y `pedidos` | `/admin/...` |
+
+## 4. Clases de diseño
+
+Tres vistas: el modelo de dominio (entidades de TypeORM) y los controllers y services de NestJS que lo usan. Llevan tipos de TypeScript, visibilidad (`+` pública, `-` privada) y multiplicidades.
+
+![Clases de diseño: modelo de dominio](png/04a-clases-diseno-dominio.png)
+
+![Clases de diseño: catálogo, cuentas y seguridad](png/04b-clases-diseno-catalogo-cuentas.png)
+
+![Clases de diseño: carrito, pedidos y pago](png/04c-clases-diseno-compra.png)
+
+- **Usuario con rol.** Cliente y Administrador del análisis se diseñan como un solo `Usuario` con el atributo `rol` (enum `Rol`), igual que en el código. Comparten el registro y el inicio de sesión.
+- **Controller + service.** Cada módulo de NestJS tiene un controller, que expone las rutas HTTP, y un service, que aplica las reglas del negocio usando el `Repository` de TypeORM.
+- **Seguridad.** `JwtAuthGuard` identifica al usuario a partir del JWT, y `RolesGuard` deja pasar solo al rol ADMINISTRADOR. El `usuarioId` siempre sale del token, nunca del cuerpo de la petición.
+- **Pago en una transacción.** `PagosService.pagar()` valida la tarjeta, verifica el stock, guarda el `Pago`, descuenta el stock y marca el pedido como Pagado en una sola transacción.
+- **Ya implementado.** `JuguetesController` y `JuguetesService` con `listarCatalogo` y `obtenerDetalle` (HU-01, HU-02). El resto de nombres guía las próximas historias.
+
+## 5. Subsistemas con interfaces
+
+![Subsistemas e interfaces](png/05a-subsistemas-interfaces.png)
+
+![Operaciones de cada interfaz](png/05b-subsistemas-operaciones.png)
+
+- **Interfaces públicas** (arriba): el frontend las usa por HTTP/JSON y nunca accede a la base de datos. **Interfaces internas** (abajo): `IInventario` y `ISesion`.
+- **`IInventario`** es la única puerta al stock: Carrito, Pedidos y Pagos verifican y descuentan unidades a través de Catálogo.
+- **Sin ciclos:** Catálogo y Usuarios no requieren interfaces de otros subsistemas de negocio. Carrito requiere Catálogo, Pedidos requiere Carrito, y Pagos requiere Pedidos.
+- Cada interfaz la realiza un service de NestJS, con los mismos nombres de operación que en las clases de diseño.
+
+## Trazabilidad del análisis al diseño
+
+| Control (análisis) | Clases de diseño | Interfaz que realiza |
+|---|---|---|
+| ControlCatalogo | JuguetesController, JuguetesService, CategoriasService | ICatalogo |
+| ControlCuentas | AuthController, AuthService, UsuariosService | IAutenticacion, ISesion |
+| ControlCarrito | CarritoController, CarritoService | ICarrito |
+| ControlPedidos | PedidosController, PedidosService | IPedidos |
+| ControlPago | PagosController, PagosService | IPagos |
+| ControlAdminCatalogo | JuguetesController, CategoriasController (rutas con RolesGuard) | IAdminCatalogo, IInventario |
+| ControlAdminPedidos | PedidosController (rutas con RolesGuard) | IAdminPedidos |
