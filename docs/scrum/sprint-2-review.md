@@ -40,7 +40,7 @@ En el Sprint Planning se comprometieron 7 historias (24 puntos) y 3 tareas técn
 | 7 | ETF-16 | HU-09 | Pagar el pedido con pago simulado | 5 | 1,25 | [#19](https://github.com/joseriverago/el-trompo-feliz/pull/19) | Terminado |
 | — | ETF-33 | T-06 | Elaborar los diagramas de secuencia | — | 1,5 | [#20](https://github.com/joseriverago/el-trompo-feliz/pull/20) | Terminado |
 | — | ETF-34 | T-07 | Elaborar los modelos de implementación y de despliegue | — | 1,5 | [#21](https://github.com/joseriverago/el-trompo-feliz/pull/21) | Terminado |
-| — | ETF-35 | T-08 | Completar el README y las evidencias de los sprints | — | 1 | este PR | Terminado al integrar este PR |
+| — | ETF-35 | T-08 | Completar el README y las evidencias de los sprints | — | 1 | [#22](https://github.com/joseriverago/el-trompo-feliz/pull/22) | Terminado |
 
 **Resumen:** 10 de 10 actividades: las 7 historias (24 puntos) y las 3 tareas. No pasa nada al siguiente sprint.
 
@@ -92,6 +92,7 @@ Cada actividad se desarrolló en su propia rama y se integró a `main` con un pu
 | [#19](https://github.com/joseriverago/el-trompo-feliz/pull/19) | ETF-16 | Pago simulado y secuencia del pago (06c) | 12:56 |
 | [#20](https://github.com/joseriverago/el-trompo-feliz/pull/20) | ETF-33 | Secuencia de CU-12 Gestionar productos (06d y 06e) | 13:14 |
 | [#21](https://github.com/joseriverago/el-trompo-feliz/pull/21) | ETF-34 | Componentes, artefactos y despliegue (07a, 07b, 08 y 09) | 13:39 |
+| [#22](https://github.com/joseriverago/el-trompo-feliz/pull/22) | ETF-35 | README final, esta Review, la Retrospectiva y las evidencias pendientes | 16:25 |
 
 <p>
   <img src="../evidencias/sprint-2/h07-09-produccion-subtotales-y-total.png" alt="Carrito con subtotales y total en la tienda publicada" width="49%">
@@ -217,9 +218,13 @@ El backend tiene **147 pruebas automatizadas** (Vitest) en 18 archivos, y todas 
 - **Velocidad real del Sprint 2: 24 puntos**, todo lo comprometido. La del Sprint 1 fue de 5 puntos. Las 10,5 horas estimadas en el Planning alcanzaron para las 10 actividades.
 - **HU-09 fue la más larga.** Entre la integración de HU-08 (09:15) y la de HU-09 (12:56) pasaron 3 h 41 min, frente a 1,25 h estimadas. Es la historia con más reglas: transacción, rechazo de prueba, carrera por el stock, índice único parcial y restricción `CHECK`. Además actualizó 5 diagramas.
 
+El informe de velocidad de Jira, generado al cerrar el sprint, compara los dos sprints: 29 puntos comprometidos y 5 terminados en el Sprint 1, y 24 comprometidos y 24 terminados en el Sprint 2. El promedio es de 14,5 puntos.
+
+![Informe de velocidad de Jira con los Sprints 1 y 2](../evidencias/sprint-2/s2-16-jira-informe-de-velocidad.png)
+
 ## 7. Cambios en el Product Backlog
 
-- **Release v1.0 (Compra en línea):** terminada, con HU-01 a HU-09 (29 puntos). Se marca como publicada en Jira al cerrar el sprint.
+- **Release v1.0 (Compra en línea):** terminada, con HU-01 a HU-09 (29 puntos). Se publicó en Jira al cerrar el sprint (ver la sección 9).
 - **Release v2.0 (Seguimiento y administración):** HU-10 a HU-20 (31 puntos) siguen en el Product Backlog, en el mismo orden. Su fecha en Jira se fija si el docente amplía el plazo y se planifica un Sprint 3.
 - **Si hay un Sprint 3:**
   - las 6 historias de prioridad Alta (HU-10 a HU-15) suman 18 puntos y caben en la velocidad del Sprint 2;
@@ -235,3 +240,17 @@ El backend tiene **147 pruebas automatizadas** (Vitest) en 18 archivos, y todas 
 | El plan gratuito de Render duerme la API tras 15 minutos sin visitas. | La tienda muestra un aviso mientras despierta. Antes de cada demostración se abre `/salud`. |
 | No hay botón para cerrar sesión, ni historial de pedidos para el cliente. | Son HU-18, HU-10 y HU-11, de la release v2.0. |
 | El frontend no tiene pruebas automatizadas: se verificó a mano, con capturas en local y en producción. | Acción de la Retrospectiva para v2.0, que agrega formularios de administración. |
+
+## 9. Cierre en Jira
+
+Después de la Review y la Retrospectiva, el 22/11/2026:
+
+1. **T-08 (ETF-35) pasó a Terminado** con un comentario que resume el PR #22 ([t08-07](../evidencias/sprint-2/t08-07-jira-etf35-terminado.png)). El tablero quedó con las 10 actividades en Terminado ([t08-08](../evidencias/sprint-2/t08-08-jira-tablero-diez-terminadas.png)).
+2. **Se publicó la release v1.0** con fecha 22/11/2026. Incluye 14 incidencias, todas terminadas: HU-01 a HU-09 y las tareas T-01 a T-05 ([s2-11](../evidencias/sprint-2/s2-11-jira-publicar-v1-0.png), [s2-12](../evidencias/sprint-2/s2-12-jira-v1-0-publicada.png)).
+3. **Se completó el ETF Sprint 2** cerca de las 16:30, con sus 10 actividades terminadas ([s2-13](../evidencias/sprint-2/s2-13-jira-sprint-2-todo-terminado.png), [s2-14](../evidencias/sprint-2/s2-14-jira-completar-sprint-2.png)). No se creó la retrospectiva de Confluence que ofrece Jira, porque la Retrospectiva está en el repositorio.
+4. **Jira creó un ETF Sprint 3 vacío y sin iniciar.** HU-10 a HU-20 (31 puntos) quedan en el Product Backlog hasta que se planifique ese sprint ([s2-15](../evidencias/sprint-2/s2-15-jira-sprint-2-completado.png)).
+
+<p>
+  <img src="../evidencias/sprint-2/s2-12-jira-v1-0-publicada.png" alt="Release v1.0 publicada en Jira" width="49%">
+  <img src="../evidencias/sprint-2/s2-15-jira-sprint-2-completado.png" alt="Sprint 2 completado y backlog de v2.0 en Jira" width="49%">
+</p>
