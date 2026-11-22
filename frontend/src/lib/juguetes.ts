@@ -13,8 +13,23 @@ export interface JugueteCatalogo {
   categoria: { id: number; nombre: string };
 }
 
+/** Juguete tal como lo devuelve GET /juguetes/:id. */
+export interface JugueteDetalle extends JugueteCatalogo {
+  descripcion: string;
+}
+
 export async function obtenerCatalogo(signal?: AbortSignal): Promise<JugueteCatalogo[]> {
   const respuesta = await fetch(`${API_URL}/juguetes`, { signal });
+  if (!respuesta.ok) {
+    throw new Error(`La API respondió ${respuesta.status}`);
+  }
+  return respuesta.json();
+}
+
+/** Detalle de un juguete, o null si no existe (la API responde 404). */
+export async function obtenerJuguete(id: string, signal?: AbortSignal): Promise<JugueteDetalle | null> {
+  const respuesta = await fetch(`${API_URL}/juguetes/${encodeURIComponent(id)}`, { signal });
+  if (respuesta.status === 404) return null;
   if (!respuesta.ok) {
     throw new Error(`La API respondió ${respuesta.status}`);
   }

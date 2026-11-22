@@ -1,8 +1,10 @@
+import Link from "next/link";
+import { BotonAgregarCarrito } from "@/components/boton-agregar-carrito";
 import { formatearEdad, formatearPrecio, type JugueteCatalogo } from "@/lib/juguetes";
 
 export function TarjetaJuguete({ juguete }: { juguete: JugueteCatalogo }) {
   return (
-    <article className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <article className="relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-shadow hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600">
       <div className="relative aspect-[3/2] bg-zinc-100 dark:bg-zinc-800">
         {/* <img> y no next/image: el administrador puede registrar imágenes de cualquier sitio. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -22,7 +24,15 @@ export function TarjetaJuguete({ juguete }: { juguete: JugueteCatalogo }) {
         <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
           {juguete.categoria.nombre}
         </p>
-        <h2 className="text-base font-semibold leading-snug">{juguete.nombre}</h2>
+        <h2 className="text-base font-semibold leading-snug">
+          {/* El enlace cubre toda la tarjeta (after:inset-0): un clic en cualquier parte abre el detalle. */}
+          <Link
+            href={`/juguetes/${juguete.id}`}
+            className="after:absolute after:inset-0 after:content-[''] hover:underline"
+          >
+            {juguete.nombre}
+          </Link>
+        </h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Edad recomendada: {formatearEdad(juguete.edadMinima, juguete.edadMaxima)}
         </p>
@@ -33,13 +43,8 @@ export function TarjetaJuguete({ juguete }: { juguete: JugueteCatalogo }) {
               Sin unidades por ahora
             </p>
           ) : (
-            // La acción del botón llega con HU-05 (agregar un juguete al carrito).
-            <button
-              type="button"
-              className="h-10 rounded-full bg-amber-500 px-4 text-sm font-semibold text-zinc-950 transition-colors hover:bg-amber-400"
-            >
-              Agregar al carrito
-            </button>
+            // relative z-10: el botón queda por encima del enlace que cubre la tarjeta.
+            <BotonAgregarCarrito className="relative z-10 w-full" />
           )}
         </div>
       </div>

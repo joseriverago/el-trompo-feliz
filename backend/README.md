@@ -62,3 +62,4 @@ En el plan gratuito, el servicio se suspende tras 15 minutos sin visitas; la pri
 | `GET /` | Nombre y estado de la API |
 | `GET /salud` | Comprueba la conexión con PostgreSQL; responde 503 si no hay conexión |
 | `GET /juguetes` | Catálogo: juguetes activos con su categoría, ordenados por nombre. `agotado` es `true` cuando el stock es 0 |
+| `GET /juguetes/:id` | Detalle de un juguete activo, con su descripción. Responde 404 «Juguete no encontrado» si no existe, está desactivado o el id no es un número |

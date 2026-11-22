@@ -60,6 +60,37 @@ describe('AppController (e2e)', () => {
     expect(nombres).toEqual([...nombres].sort(ordenEspanol.compare));
   });
 
+  it('GET /juguetes/:id devuelve el detalle con la descripción', async () => {
+    const catalogo = await request(app.getHttpServer()).get('/juguetes');
+    const primero = (catalogo.body as Array<Record<string, unknown>>)[0];
+
+    const respuesta = await request(app.getHttpServer())
+      .get(`/juguetes/${String(primero.id)}`)
+      .expect(200);
+
+    expect(respuesta.body).toEqual({
+      ...primero,
+      descripcion: expect.any(String),
+    });
+  });
+
+  it.each(['999999', '99999999999'])(
+    'GET /juguetes/%s responde 404 «Juguete no encontrado»',
+    async (id) => {
+      const respuesta = await request(app.getHttpServer())
+        .get(`/juguetes/${id}`)
+        .expect(404);
+
+      expect(respuesta.body).toMatchObject({
+        message: 'Juguete no encontrado',
+      });
+    },
+  );
+
+  it('GET /juguetes/abc responde 404 porque el id no es un número', () => {
+    return request(app.getHttpServer()).get('/juguetes/abc').expect(404);
+  });
+
   afterEach(async () => {
     await app.close();
   });

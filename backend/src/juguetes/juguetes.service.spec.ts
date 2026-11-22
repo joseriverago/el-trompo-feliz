@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Categoria } from '../categorias/entities/categoria.entity.js';
@@ -27,10 +28,11 @@ function juguete(datos: Partial<Juguete>): Juguete {
 
 describe('JuguetesService', () => {
   let servicio: JuguetesService;
-  const repositorio = { find: vi.fn() };
+  const repositorio = { find: vi.fn(), findOne: vi.fn() };
 
   beforeEach(async () => {
     repositorio.find.mockReset();
+    repositorio.findOne.mockReset();
     const modulo: TestingModule = await Test.createTestingModule({
       providers: [
         JuguetesService,
@@ -100,5 +102,61 @@ describe('JuguetesService', () => {
     repositorio.find.mockResolvedValue([]);
 
     await expect(servicio.listarCatalogo()).resolves.toEqual([]);
+  });
+
+  describe('obtenerDetalle', () => {
+    it('busca el juguete activo con su categoría', async () => {
+      repositorio.findOne.mockResolvedValue(juguete({}));
+
+      await servicio.obtenerDetalle(1);
+
+      expect(repositorio.findOne).toHaveBeenCalledWith({
+        where: { id: 1, activo: true },
+        relations: { categoria: true },
+      });
+    });
+
+    it('devuelve descripción y unidades disponibles además de los datos del catálogo', async () => {
+      repositorio.findOne.mockResolvedValue(juguete({}));
+
+      await expect(servicio.obtenerDetalle(1)).resolves.toEqual({
+        id: 1,
+        nombre: 'Osito de peluche Bruno',
+        descripcion: 'Osito suave.',
+        precio: 35.5,
+        imagenUrl: 'https://placehold.co/600x400?text=Osito',
+        edadMinima: 0,
+        edadMaxima: 5,
+        stock: 15,
+        agotado: false,
+        categoria: { id: 2, nombre: 'Peluches' },
+      });
+    });
+
+    it('marca como agotado el juguete con stock 0', async () => {
+      repositorio.findOne.mockResolvedValue(juguete({ stock: 0 }));
+
+      const detalle = await servicio.obtenerDetalle(1);
+
+      expect(detalle.agotado).toBe(true);
+    });
+
+    it('responde 404 si el juguete no existe o está desactivado', async () => {
+      repositorio.findOne.mockResolvedValue(null);
+
+      await expect(servicio.obtenerDetalle(999)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    it('responde 404 sin consultar la base de datos si el id está fuera de rango', async () => {
+      await expect(servicio.obtenerDetalle(0)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      await expect(
+        servicio.obtenerDetalle(99_999_999_999),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(repositorio.findOne).not.toHaveBeenCalled();
+    });
   });
 });
