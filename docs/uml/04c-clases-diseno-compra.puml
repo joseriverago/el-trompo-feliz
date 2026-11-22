@@ -89,7 +89,9 @@ end note
 
 legend bottom
   • Todas las rutas de esta vista usan JwtAuthGuard: el usuarioId sale del token, nunca del cuerpo de la petición.
-  • Ya están implementados obtener/obtenerCarrito y agregar/agregarJuguete (HU-05); su secuencia está en el diagrama 06a.
+  • Ya están implementados obtener/obtenerCarrito y agregar/agregarJuguete (HU-05; su secuencia está en el diagrama 06a),
+     y cambiarCantidad y quitar/quitarItem (HU-06).
+  • cambiarCantidad() y quitarItem() buscan la línea dentro del carrito del usuario del token: con la línea de otro cliente responden 404.
   • obtenerPedido() busca por número y por usuarioId, así un cliente no puede ver el pedido de otro («Pedido no encontrado»).
   • listarTodos() y cambiarEstado() usan además RolesGuard (solo ADMINISTRADOR).
   • TarjetaDto solo existe durante la petición: del pago se guardan los últimos 4 dígitos y el resultado.
