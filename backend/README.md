@@ -28,6 +28,7 @@ API en NestJS con TypeScript y TypeORM. Se despliega en Render y usa PostgreSQL 
 | `DATABASE_URL` | Cadena de conexión a PostgreSQL (Neon) |
 | `PORT` | Puerto de la API; si no existe se usa 4000. Render asigna el suyo |
 | `FRONTEND_URL` | URL del frontend que puede llamar a la API desde el navegador (CORS). Admite varias separadas por comas; por defecto `http://localhost:3000` |
+| `JWT_SECRET` | Clave para firmar los JWT de la sesión, de 32 caracteres o más y distinta en cada entorno. Sin ella la API no arranca |
 | `SEED_ADMIN_CORREO`, `SEED_ADMIN_CONTRASENA` | Administrador de prueba que crea `db:preparar` |
 | `SEED_CLIENTE_CORREO`, `SEED_CLIENTE_CONTRASENA` | Cliente de prueba que crea `db:preparar` |
 
@@ -49,7 +50,7 @@ Servicio web (*Web Service*) conectado al repositorio de GitHub. Cada cambio int
 | Comando de compilación | `npm ci && npm run build` |
 | Comando de inicio | `npm run start:prod` |
 | Ruta de verificación (*Health Check Path*) | `/` |
-| Variables de entorno | `DATABASE_URL` (cadena de Neon) y `FRONTEND_URL` (`https://el-trompo-feliz-jrivera.vercel.app`) |
+| Variables de entorno | `DATABASE_URL` (cadena de Neon), `FRONTEND_URL` (`https://el-trompo-feliz-jrivera.vercel.app`) y `JWT_SECRET` (una clave propia de producción) |
 
 La verificación usa `/` y no `/salud` para que Render no consulte la base de datos cada pocos segundos ni reinicie la API si Neon tarda en responder.
 
@@ -63,3 +64,4 @@ En el plan gratuito, el servicio se suspende tras 15 minutos sin visitas; la pri
 | `GET /salud` | Comprueba la conexión con PostgreSQL; responde 503 si no hay conexión |
 | `GET /juguetes` | Catálogo: juguetes activos con su categoría, ordenados por nombre. `agotado` es `true` cuando el stock es 0 |
 | `GET /juguetes/:id` | Detalle de un juguete activo, con su descripción. Responde 404 «Juguete no encontrado» si no existe, está desactivado o el id no es un número |
+| `POST /auth/registro` | Registra un cliente con `nombre`, `correo` y `contrasena` (8 caracteres o más). Responde 201 con `{ token, usuario }` (sesión iniciada), 400 con `errores` por campo o 409 «Este correo ya está registrado». El correo se guarda en minúsculas y la contraseña cifrada con bcrypt |
