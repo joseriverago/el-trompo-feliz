@@ -1,7 +1,7 @@
 # Retrospectiva: Sprint 2
 
 **Producto:** Tienda virtual de juguetes «El Trompo Feliz»  
-**Sprint:** ETF Sprint 2, 22/11/2026 (se cierra en Jira al integrar T-08)  
+**Sprint:** ETF Sprint 2, 22/11/2026 (completado en Jira cerca de las 16:30)  
 **Fecha de la Retrospectiva:** 22/11/2026 por la tarde, después de la Sprint Review  
 **Equipo Scrum:** José Luis Rivera Gonzales (Product Owner, Scrum Master y Developer)  
 **Formato:** qué salió bien, qué se puede mejorar, acciones para un Sprint 3 y revisión de las acciones del Sprint 1.
