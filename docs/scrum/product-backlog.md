@@ -396,13 +396,14 @@ Las historias se estiman en puntos de historia con la baraja de Planning Poker y
 
 | Release | Contenido | Sprint | Puntos | Fecha |
 |---|---|---|---|---|
-| v1.0: Compra en línea | HU-01 a HU-09 | Sprint 1 y Sprint 2 | 29 | Pendiente: HU-01 y HU-02 se terminaron en el Sprint 1; HU-03 a HU-09 pasan al Sprint 2 |
-| v2.0: Seguimiento y administración | HU-10 a HU-20 | Sprint 2 | 31 | Por confirmar (fin del Sprint 2) |
+| v1.0: Compra en línea | HU-01 a HU-09 | Sprint 1 y Sprint 2 | 29 | 22/11/2026 (fin del Sprint 2). HU-01 y HU-02 se terminaron en el Sprint 1; HU-03 a HU-09 están en el Sprint 2 |
+| v2.0: Seguimiento y administración | HU-10 a HU-20 | Sprint 3, si el docente amplía el plazo | 31 | Por confirmar |
 
 **Objetivos de los sprints (Sprint Goal)**
 
 - **Sprint 1:** «Un cliente puede registrarse, encontrar un juguete, armar su carrito y completar una compra con pago simulado».
-- **Sprint 2:** «El cliente sigue el estado de sus pedidos y el administrador gestiona juguetes, categorías, stock y pedidos».
+- **Sprint 2:** «Un cliente puede registrarse, armar su carrito y completar una compra con pago simulado que descuenta el stock, y los 9 diagramas UML quedan completos y coherentes con el código». Se redefinió en el [Sprint 2 Planning](sprint-2-planning.md), porque HU-03 a HU-09 pasaron del Sprint 1 al Sprint 2.
+- **Sprint 3 (si el docente amplía el plazo):** «El cliente sigue el estado de sus pedidos y el administrador gestiona juguetes, categorías, stock y pedidos». Era la meta original del Sprint 2.
 
 ## 12. Casos de uso previstos (trazabilidad)
 
