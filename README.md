@@ -61,7 +61,7 @@ Las variables de entorno se documentan en el archivo `.env.example` de cada proy
 
 | Parte | URL |
 |---|---|
-| Tienda (frontend en Vercel) | https://el-trompo-feliz-flax.vercel.app |
+| Tienda (frontend en Vercel) | https://el-trompo-feliz-jrivera.vercel.app |
 | API (backend en Render) | https://el-trompo-feliz-api.onrender.com |
 | Estado de la API y de la base de datos | https://el-trompo-feliz-api.onrender.com/salud |
 

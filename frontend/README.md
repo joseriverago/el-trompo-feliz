@@ -22,7 +22,7 @@ Next.js incrusta las variables `NEXT_PUBLIC_*` al compilar: si se cambia en Verc
 
 ## Despliegue en Vercel
 
-URL de producción: https://el-trompo-feliz-flax.vercel.app
+URL de producción: https://el-trompo-feliz-jrivera.vercel.app
 
 Proyecto conectado al repositorio de GitHub. Cada cambio integrado en `main` se publica en producción, y cada pull request genera una vista previa.
 
