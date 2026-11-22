@@ -23,7 +23,7 @@ el-trompo-feliz/
 ├── frontend/      Aplicación web (Next.js + Tailwind CSS)
 ├── backend/       API REST (NestJS)
 └── docs/
-    ├── scrum/     Product Backlog, Definición de Listo y de Terminado, importación a Jira
+    ├── scrum/     Product Backlog, Definición de Listo y de Terminado, importación a Jira, Review y Retrospectiva de cada sprint
     └── uml/       Diagramas UML en PlantUML
 ```
 
@@ -56,6 +56,7 @@ Las variables de entorno se documentan en el archivo `.env.example` de cada proy
 - Scrum en Jira, espacio **ETF**: épicas, historias de usuario, sprints y releases.
 - Cada historia o tarea se desarrolla en una rama `feature/ETF-<número>-<descripción>` y se integra a `main` con un pull request.
 - Cada commit cita la clave de Jira, por ejemplo: `ETF-28 crea la estructura del repositorio`.
+- Sprint 1 (21/11/2026): [Sprint Review](docs/scrum/sprint-1-review.md) y [Retrospectiva](docs/scrum/sprint-1-retrospectiva.md).
 
 ## Aplicación publicada
 

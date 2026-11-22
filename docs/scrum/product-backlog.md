@@ -392,10 +392,11 @@ Las historias se estiman en puntos de historia con la baraja de Planning Poker y
 - **Puntos comprometidos:** 60 puntos en 20 historias.
 - **Velocidad prevista:** 30 puntos por sprint. Es una estimación inicial, porque es el primer sprint del equipo con este producto; se ajusta con la velocidad real del Sprint 1.
 - **Sprints necesarios:** 60 ÷ 30 = 2 sprints.
+- **Velocidad real del Sprint 1:** 5 puntos (HU-01 y HU-02). El sprint concentró la infraestructura y el modelado UML, que no llevan puntos; el detalle está en la [Sprint Review del Sprint 1](sprint-1-review.md#6-burndown-y-velocidad). El alcance del Sprint 2 se ajusta en su Sprint Planning.
 
 | Release | Contenido | Sprint | Puntos | Fecha |
 |---|---|---|---|---|
-| v1.0: Compra en línea | HU-01 a HU-09 | Sprint 1 | 29 | Por confirmar (fin del Sprint 1) |
+| v1.0: Compra en línea | HU-01 a HU-09 | Sprint 1 y Sprint 2 | 29 | Pendiente: HU-01 y HU-02 se terminaron en el Sprint 1; HU-03 a HU-09 pasan al Sprint 2 |
 | v2.0: Seguimiento y administración | HU-10 a HU-20 | Sprint 2 | 31 | Por confirmar (fin del Sprint 2) |
 
 **Objetivos de los sprints (Sprint Goal)**
