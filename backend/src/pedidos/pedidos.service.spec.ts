@@ -18,6 +18,7 @@ import {
   AJUSTAR_CARRITO,
   CARRITO_VACIO,
   PEDIDO_NO_ENCONTRADO,
+  PEDIDO_YA_PAGADO,
   PedidosService,
 } from './pedidos.service.js';
 
@@ -67,6 +68,7 @@ describe('PedidosService', () => {
         Object.assign(new Entidad() as object, datos) as T,
     ),
     save: vi.fn(),
+    update: vi.fn(),
   };
   const fuenteDatos = {
     transaction: vi.fn((trabajo: (gestor: EntityManager) => Promise<unknown>) =>
@@ -89,6 +91,7 @@ describe('PedidosService', () => {
           Object.assign(pedido, { id: 1, creadoEn: new Date('2026-11-22') }),
         ),
       );
+    gestor.update.mockReset().mockResolvedValue({ affected: 1 });
     fuenteDatos.transaction.mockClear();
 
     const modulo: TestingModule = await Test.createTestingModule({
@@ -259,6 +262,38 @@ describe('PedidosService', () => {
         servicio.generarPedido(CLIENTE, ENTREGA),
       ).rejects.toBeInstanceOf(ConflictException);
       expect(fuenteDatos.transaction).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('marcarPagado (HU-09)', () => {
+    const pendiente = () =>
+      Object.assign(new Pedido(), { id: 41, estado: EstadoPedido.PENDIENTE });
+
+    it('pasa el pedido a Pagado solo si sigue Pendiente', async () => {
+      const pedido = pendiente();
+
+      await servicio.marcarPagado(gestor as unknown as EntityManager, pedido);
+
+      expect(gestor.update).toHaveBeenCalledWith(
+        Pedido,
+        { id: 41, estado: EstadoPedido.PENDIENTE },
+        { estado: EstadoPedido.PAGADO },
+      );
+      expect(pedido.estado).toBe(EstadoPedido.PAGADO);
+    });
+
+    it('si otro pago ya lo marcó (doble clic), responde 409 «Este pedido ya está pagado»', async () => {
+      gestor.update.mockResolvedValue({ affected: 0 });
+      const pedido = pendiente();
+
+      const intento = servicio.marcarPagado(
+        gestor as unknown as EntityManager,
+        pedido,
+      );
+
+      await expect(intento).rejects.toBeInstanceOf(ConflictException);
+      await expect(intento).rejects.toThrow(PEDIDO_YA_PAGADO);
+      expect(pedido.estado).toBe(EstadoPedido.PENDIENTE);
     });
   });
 

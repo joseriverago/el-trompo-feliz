@@ -4,6 +4,9 @@ import {
   type ValidationError,
 } from '@nestjs/common';
 
+/** Mensaje general de un 400 por datos del formulario; el detalle va en `errores`. */
+export const REVISA_FORMULARIO = 'Revisa los datos del formulario.';
+
 /**
  * Un mensaje por campo, para que el formulario lo muestre junto al campo que hay que corregir.
  * Si un campo está vacío, se muestra ese mensaje antes que los demás.
@@ -34,7 +37,7 @@ export function crearPipeValidacion(): ValidationPipe {
     exceptionFactory: (errores) =>
       new BadRequestException({
         statusCode: 400,
-        message: 'Revisa los datos del formulario.',
+        message: REVISA_FORMULARIO,
         errores: erroresPorCampo(errores),
       }),
   });

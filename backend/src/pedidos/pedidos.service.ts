@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, type Repository } from 'typeorm';
+import { DataSource, type EntityManager, type Repository } from 'typeorm';
 import { CarritoService } from '../carrito/carrito.service.js';
 import type { Carrito } from '../carrito/entities/carrito.entity.js';
 import type { ItemCarrito } from '../carrito/entities/item-carrito.entity.js';
@@ -22,6 +22,7 @@ export const CARRITO_VACIO =
 export const AJUSTAR_CARRITO =
   'Ajusta tu carrito: no hay stock suficiente de algunos juguetes';
 export const PEDIDO_NO_ENCONTRADO = 'Pedido no encontrado';
+export const PEDIDO_YA_PAGADO = 'Este pedido ya está pagado';
 const YA_NO_SE_VENDE = 'Este juguete ya no está a la venta';
 
 /** Intentos para obtener un número de pedido libre (cada intento sale al azar). */
@@ -99,6 +100,27 @@ export class PedidosService {
       });
     }
     return pedido;
+  }
+
+  /**
+   * IPedidos: pasa el pedido de Pendiente a Pagado dentro de la transacción del pago (HU-09).
+   * El UPDATE solo cambia la fila si el pedido sigue Pendiente. Si llegan dos pagos a la vez
+   * (doble clic), el segundo espera al primero, ya no lo encuentra Pendiente y responde 409:
+   * su transacción se deshace y el stock no se descuenta dos veces.
+   */
+  async marcarPagado(gestor: EntityManager, pedido: Pedido): Promise<void> {
+    const { affected } = await gestor.update(
+      Pedido,
+      { id: pedido.id, estado: EstadoPedido.PENDIENTE },
+      { estado: EstadoPedido.PAGADO },
+    );
+    if (affected !== 1) {
+      throw new ConflictException({
+        statusCode: 409,
+        message: PEDIDO_YA_PAGADO,
+      });
+    }
+    pedido.estado = EstadoPedido.PAGADO;
   }
 
   /** Verifica el stock de todos los juguetes a la vez y junta los que no alcanzan. */

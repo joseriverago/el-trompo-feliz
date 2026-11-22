@@ -6,12 +6,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
-import { recortar } from '../../auth/dto/normalizar.js';
-
-/** Quita espacios y guiones: «987 654 321» y «987-654-321» se guardan como 987654321. */
-function soloDigitos({ value }: { value: unknown }): unknown {
-  return typeof value === 'string' ? value.replace(/[\s-]/g, '') : value;
-}
+import { recortar, soloDigitos } from '../../auth/dto/normalizar.js';
 
 /** Una referencia vacía es lo mismo que no darla: se guarda null. */
 function recortarOpcional({ value }: { value: unknown }): unknown {
