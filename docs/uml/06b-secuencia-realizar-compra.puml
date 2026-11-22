@@ -30,7 +30,7 @@ skinparam control {
   BorderColor #92400E
 }
 
-title Secuencia · CU-09 Realizar compra: datos de entrega y generación del pedido (HU-08)
+title Secuencia · CU-09 Realizar compra (1/2): datos de entrega y generación del pedido (HU-08)
 
 actor Cliente
 boundary "VistaComprar y\nFormularioEntrega\n(Next.js)" as Pagina
@@ -96,7 +96,7 @@ else datos completos
         Controller --> Pagina : 201 PedidoDto
         deactivate Controller
         Pagina -> Pagina : guardarCarrito(vacío):\nel contador del encabezado pasa a 0
-        Pagina --> Cliente : lleva a /pedidos/{numero}/pago: número,\nestado Pendiente, juguetes, entrega y total
+        Pagina --> Cliente : lleva a /pedidos/{numero}/pago: número,\nestado Pendiente, juguetes, entrega, total\ny el formulario de pago (sigue en el diagrama 06c)
       end
     end
   end
@@ -105,7 +105,7 @@ deactivate Pagina
 
 legend bottom
   • El usuarioId sale del token (JwtAuthGuard): el pedido siempre se genera con el carrito del cliente que inició sesión.
-  • El stock solo se verifica aquí; se descuenta al aprobarse el pago (HU-09), en la misma transacción que pasa el pedido a Pagado.
+  • El stock solo se verifica aquí; se descuenta al aprobarse el pago (HU-09, diagrama 06c), en la misma transacción que pasa el pedido a Pagado.
   • DetallePedido copia el nombre y el precio vigentes: si después cambia el precio en el catálogo, el pedido no cambia.
   • El pedido y el vaciado del carrito van en una sola transacción: o se guardan los dos o ninguno. Si el número ya existía (UNIQUE), se prueba con otro.
   • La página de pago lee el pedido con GET /pedidos/{numero}; con el número de otro cliente responde 404 «Pedido no encontrado».
