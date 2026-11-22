@@ -49,7 +49,7 @@ Servicio web (*Web Service*) conectado al repositorio de GitHub. Cada cambio int
 | Comando de compilación | `npm ci && npm run build` |
 | Comando de inicio | `npm run start:prod` |
 | Ruta de verificación (*Health Check Path*) | `/` |
-| Variables de entorno | `DATABASE_URL` (cadena de Neon) y `FRONTEND_URL` (`https://el-trompo-feliz-flax.vercel.app`) |
+| Variables de entorno | `DATABASE_URL` (cadena de Neon) y `FRONTEND_URL` (`https://el-trompo-feliz-jrivera.vercel.app`) |
 
 La verificación usa `/` y no `/salud` para que Render no consulte la base de datos cada pocos segundos ni reinicie la API si Neon tarda en responder.
 

@@ -8,7 +8,7 @@ describe('origenesPermitidos', () => {
 
   it('acepta varias URL separadas por comas y quita espacios y barras finales', () => {
     expect(
-      origenesPermitidos(' https://el-trompo-feliz.vercel.app/ , http://localhost:3000'),
-    ).toEqual(['https://el-trompo-feliz.vercel.app', 'http://localhost:3000']);
+      origenesPermitidos(' https://el-trompo-feliz-jrivera.vercel.app/ , http://localhost:3000'),
+    ).toEqual(['https://el-trompo-feliz-jrivera.vercel.app', 'http://localhost:3000']);
   });
 });
