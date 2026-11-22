@@ -1,0 +1,103 @@
+@startuml 02b-clases-analisis-compra
+!include estilo.iuml
+skinparam nodesep 90
+skinparam ranksep 70
+
+title Clases de análisis (2/3) · Carrito, compra y pago\n<size:12>CU-07, CU-08, CU-09, CU-10, CU-11</size>
+
+class PantallaCarrito <<(B,#BFDBFE) boundary>> {
+  mostrarCarrito()
+  cambiarCantidad(item, cantidad)
+  quitar(item)
+}
+class PantallaCheckout <<(B,#BFDBFE) boundary>> {
+  ingresarDatosEntrega()
+}
+class PantallaPago <<(B,#BFDBFE) boundary>> {
+  ingresarTarjeta()
+}
+class PantallaMisPedidos <<(B,#BFDBFE) boundary>> {
+  mostrarPedidos()
+  mostrarDetalle(pedido)
+}
+
+class ControlCarrito <<(C,#FED7AA) control>> {
+  agregarJuguete(juguete)
+  cambiarCantidad(item, cantidad)
+  quitarJuguete(item)
+  calcularTotal()
+}
+class ControlPedidos <<(C,#FED7AA) control>> {
+  generarPedido(datosEntrega)
+  listarMisPedidos()
+  obtenerPedido(numero)
+}
+class ControlPago <<(C,#FED7AA) control>> {
+  validarTarjeta(tarjeta)
+  procesarPago(pedido, tarjeta)
+}
+
+class Cliente <<(E,#BBF7D0) entity>>
+class Carrito <<(E,#BBF7D0) entity>> {
+  total()
+}
+class ItemCarrito <<(E,#BBF7D0) entity>> {
+  cantidad
+  subtotal()
+}
+class Juguete <<(E,#BBF7D0) entity>> {
+  precio
+  stock
+}
+class Pedido <<(E,#BBF7D0) entity>> {
+  numero
+  fecha
+  estado
+  total
+}
+class DetallePedido <<(E,#BBF7D0) entity>> {
+  nombreJuguete
+  precioUnitario
+  cantidad
+  subtotal()
+}
+class DatosEntrega <<(E,#BBF7D0) entity>> {
+  destinatario
+  telefono
+  direccion
+  distrito
+  referencia
+}
+class Pago <<(E,#BBF7D0) entity>> {
+  monto
+  ultimosDigitos
+  aprobado
+  fecha
+}
+
+PantallaCarrito -down- ControlCarrito
+PantallaCheckout -down- ControlPedidos
+PantallaMisPedidos -down- ControlPedidos
+PantallaPago -down- ControlPago
+
+ControlCarrito -down- Carrito
+ControlPedidos -down- Pedido
+ControlPago -down- Pago
+
+Cliente "1" -right- "0..1" Carrito : tiene >
+Carrito "1" *-down- "0..*" ItemCarrito
+ItemCarrito "0..*" -right- "1" Juguete
+Cliente "1" -down- "0..*" Pedido : realiza >
+Pedido "1" *-down- "1..*" DetallePedido
+Pedido "1" *-down- "1" DatosEntrega
+Juguete "1" -right- "0..*" DetallePedido : se copia en >
+Pedido "1" -right- "0..*" Pago : se paga con >
+
+legend bottom
+  **B** frontera · **C** control · **E** entidad
+  • El carrito se guarda en la base de datos: el cliente lo encuentra igual al volver a entrar.
+  • Al generar el pedido se copia el nombre y el precio de cada juguete (DetallePedido): el pedido no cambia si luego cambia el catálogo.
+  • Un pedido puede tener varios intentos de pago, pero solo uno aprobado; del pago solo se guardan los últimos 4 dígitos.
+  • El stock se descuenta al aprobarse el pago, en la misma operación que pasa el pedido a Pagado.
+endlegend
+@enduml
