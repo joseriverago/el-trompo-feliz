@@ -18,7 +18,7 @@ import { PedidosService } from './pedidos.service.js';
   ],
   controllers: [PedidosController],
   providers: [PedidosService],
-  // Pagos marcará el pedido Pagado (HU-09).
+  // IPedidos: Pagos lee el pedido y lo marca Pagado (HU-09).
   exports: [PedidosService],
 })
 export class PedidosModule {}

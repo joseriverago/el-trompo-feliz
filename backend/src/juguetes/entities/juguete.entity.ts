@@ -1,4 +1,5 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
@@ -12,6 +13,8 @@ import { Categoria } from '../../categorias/entities/categoria.entity.js';
 import { transformadorDecimal } from '../../database/transformador-decimal.js';
 
 @Entity({ name: 'juguetes' })
+// Red de seguridad: aunque falle una validación, la base de datos nunca deja el stock en negativo.
+@Check('ck_juguetes_stock', '"stock" >= 0')
 export class Juguete {
   @PrimaryGeneratedColumn()
   id: number;

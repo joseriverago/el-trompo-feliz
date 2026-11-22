@@ -1,9 +1,14 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { type EntityManager, MoreThanOrEqual } from 'typeorm';
 import type { Categoria } from '../categorias/entities/categoria.entity.js';
 import { Juguete } from './entities/juguete.entity.js';
-import { JuguetesService, mensajeSinStock } from './juguetes.service.js';
+import {
+  JuguetesService,
+  mensajeSinStock,
+  STOCK_INSUFICIENTE,
+} from './juguetes.service.js';
 
 const peluches = { id: 2, nombre: 'Peluches' } as Categoria;
 
@@ -194,6 +199,96 @@ describe('JuguetesService', () => {
       await expect(servicio.verificarStock(999, 1)).rejects.toBeInstanceOf(
         NotFoundException,
       );
+    });
+  });
+
+  describe('descontarStock (HU-09)', () => {
+    const gestor = { decrement: vi.fn(), findBy: vi.fn() };
+    const comoGestor = gestor as unknown as EntityManager;
+    const lineas = [
+      { jugueteId: 12, nombre: 'Ajedrez de madera', cantidad: 1 },
+      { jugueteId: 8, nombre: 'Ábaco de colores', cantidad: 3 },
+    ];
+
+    /** Ejecuta descontarStock y devuelve el 409 que lanza. */
+    async function conflicto(): Promise<ConflictException> {
+      const error: unknown = await servicio
+        .descontarStock(comoGestor, lineas)
+        .catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(ConflictException);
+      return error as ConflictException;
+    }
+
+    beforeEach(() => {
+      gestor.decrement.mockReset().mockResolvedValue({ affected: 1 });
+      gestor.findBy.mockReset().mockResolvedValue([]);
+    });
+
+    it('descuenta cada juguete solo si sigue activo y le alcanza el stock, en orden de id', async () => {
+      await servicio.descontarStock(comoGestor, lineas);
+
+      expect(gestor.decrement.mock.calls).toEqual([
+        [
+          Juguete,
+          { id: 8, activo: true, stock: MoreThanOrEqual(3) },
+          'stock',
+          3,
+        ],
+        [
+          Juguete,
+          { id: 12, activo: true, stock: MoreThanOrEqual(1) },
+          'stock',
+          1,
+        ],
+      ]);
+      expect(gestor.findBy).not.toHaveBeenCalled();
+    });
+
+    it('si otro cliente compró las últimas unidades, responde 409 con el juguete y el stock que le queda', async () => {
+      gestor.decrement.mockImplementation(
+        (_entidad: unknown, condiciones: { id: number }) =>
+          Promise.resolve({ affected: condiciones.id === 8 ? 0 : 1 }),
+      );
+      gestor.findBy.mockResolvedValue([juguete({ id: 8, stock: 2 })]);
+
+      expect((await conflicto()).getResponse()).toEqual({
+        statusCode: 409,
+        message: STOCK_INSUFICIENTE,
+        juguetes: [
+          {
+            jugueteId: 8,
+            nombre: 'Ábaco de colores',
+            stock: 2,
+            mensaje: 'Solo quedan 2 unidades',
+          },
+        ],
+      });
+    });
+
+    it('lista todos los juguetes que faltan; uno desactivado o borrado cuenta como agotado', async () => {
+      gestor.decrement.mockResolvedValue({ affected: 0 });
+      gestor.findBy.mockResolvedValue([
+        juguete({ id: 12, stock: 5, activo: false }),
+      ]);
+
+      const respuesta = (await conflicto()).getResponse() as {
+        juguetes: unknown[];
+      };
+
+      expect(respuesta.juguetes).toEqual([
+        {
+          jugueteId: 8,
+          nombre: 'Ábaco de colores',
+          stock: 0,
+          mensaje: 'Este juguete está agotado',
+        },
+        {
+          jugueteId: 12,
+          nombre: 'Ajedrez de madera',
+          stock: 0,
+          mensaje: 'Este juguete está agotado',
+        },
+      ]);
     });
   });
 

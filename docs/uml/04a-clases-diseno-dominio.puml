@@ -43,7 +43,6 @@ class Juguete <<entity>> {
   + estaAgotado(): boolean
   + hayStockPara(cantidad: number): boolean
   + tieneStockBajo(): boolean
-  + descontarStock(cantidad: number): void
 }
 class Carrito <<entity>> {
   - id: number
@@ -106,6 +105,8 @@ legend bottom
   • calcularSubtotal() y calcularTotal() (HU-07) cuentan en céntimos enteros: 24.90 × 3 da 74.70, sin errores de redondeo.
   • DetallePedido copia nombre y precio del juguete al generar el pedido (HU-08); Juguete.activo = falso lo saca del catálogo sin borrarlo.
   • Pedido, DetallePedido y DatosEntrega ya están en el código (HU-08): numero sigue el formato TF-AAAAMMDD-NNNNNN y es UNIQUE.
-  • avanzarA() solo permite Pendiente → Pagado → Enviado → Entregado; Pago guarda cada intento, solo los últimos 4 dígitos.
+  • avanzarA() solo permite Pendiente → Pagado → Enviado → Entregado.
+  • Pago ya está en el código (HU-09): guarda cada intento, aprobado o rechazado, con solo los últimos 4 dígitos; un índice único parcial admite un solo pago aprobado por pedido.
+  • El stock se descuenta con IInventario.descontarStock(), un UPDATE condicional (stock >= cantidad) en la transacción del pago; un CHECK impide que quede negativo.
 endlegend
 @enduml

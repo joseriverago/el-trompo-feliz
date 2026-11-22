@@ -1,0 +1,116 @@
+@startuml 06c-secuencia-pagar-pedido
+!include estilo.iuml
+skinparam maxMessageSize 220
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam sequence {
+  ParticipantBackgroundColor #FFFBEB
+  ParticipantBorderColor #B45309
+  ParticipantFontStyle bold
+  ActorBackgroundColor #FEF3C7
+  ActorBorderColor #92400E
+  LifeLineBorderColor #B45309
+  LifeLineBackgroundColor #FEF3C7
+  GroupBorderColor #92400E
+  GroupBackgroundColor #FEF3C7
+  GroupHeaderFontColor #78350F
+  DividerBackgroundColor #FEF3C7
+  DividerBorderColor #B45309
+}
+skinparam database {
+  BackgroundColor #FFFBEB
+  BorderColor #B45309
+}
+skinparam boundary {
+  BackgroundColor #FEF3C7
+  BorderColor #92400E
+}
+skinparam control {
+  BackgroundColor #FEF3C7
+  BorderColor #92400E
+}
+
+title Secuencia · CU-09 Realizar compra (2/2) y CU-10 Procesar pago simulado: pago y descuento del stock (HU-09)
+
+actor Cliente
+boundary "VistaPago y\nFormularioPago\n(Next.js)" as Pagina
+control "JwtAuthGuard" as Guard
+control "PagosController" as Controller
+participant "PagosService\n(IPagos)" as Pagos
+participant "PedidosService\n(IPedidos)" as Pedidos
+participant "JuguetesService\n(IInventario)" as Juguetes
+database "PostgreSQL\n(Neon)" as BD
+
+Cliente -> Pagina : en /pedidos/{numero}/pago escribe número de tarjeta,\ntitular, vencimiento (MM/AA) y CVV, y presiona «Pagar S/ …»
+activate Pagina
+Pagina -> Pagina : validarTarjeta(datos)
+
+alt falta un dato, el formato no es válido o la tarjeta venció
+  Pagina --> Cliente : mensaje junto a cada campo y foco en el primero;\nno se llama a la API
+else datos completos
+  Pagina -> Pagina : desactiva el botón: «Procesando el pago…»\n(un doble clic no envía dos pagos)
+  Pagina -> Guard : POST /pedidos/{numero}/pago\n{ numero, titular, vencimiento, cvv }\nAuthorization: Bearer token
+  activate Guard
+  alt token inválido o vencido
+    Guard --> Pagina : 401 «Inicia sesión para continuar»
+    Pagina --> Cliente : borrarSesion() y lleva a iniciar sesión\n(después vuelve a la página de pago)
+  else token válido
+    Guard -> Controller : pagar(usuario, numero, TarjetaDto)\n(el pipe valida el DTO: si falla, 400 con un mensaje por campo)
+    deactivate Guard
+    activate Controller
+    Controller -> Pagos : pagar(usuario.id, numero, tarjeta)
+    activate Pagos
+    Pagos -> Pagos : validarTarjeta(tarjeta): el vencimiento no pasó\n(hora de Lima); si venció, 400 «La tarjeta está vencida»
+    Pagos -> Pedidos : obtenerPedido(usuarioId, numero)
+    Pedidos -> BD : SELECT pedido con detalles\nWHERE numero AND usuario_id
+    BD --> Pedidos : Pedido
+    Pedidos --> Pagos : Pedido, o 404 si es de otro cliente
+    alt el pedido ya no está Pendiente
+      Pagos --> Controller : ConflictException
+      Controller --> Pagina : 409 «Este pedido ya está pagado»
+      Pagina --> Cliente : vuelve a leer el pedido y muestra la confirmación
+    else esTarjetaRechazada(numero): termina en 0000
+      Pagos -> BD : INSERT pagos (últimos 4 dígitos, aprobado = falso)
+      Pagos --> Controller : HttpException 402
+      Controller --> Pagina : 402 «Pago rechazado»
+      Pagina --> Cliente : «Pago rechazado»: el pedido sigue Pendiente,\nel stock no cambia y puede reintentar
+    else tarjeta aprobada
+      group transacción: fuenteDatos.transaction(gestor)
+        Pagos -> Pedidos : marcarPagado(gestor, pedido)
+        Pedidos -> BD : UPDATE pedidos SET estado = PAGADO\nWHERE id AND estado = PENDIENTE
+        opt 0 filas: otro pago del mismo pedido llegó antes
+          Pedidos --> Pagos : ConflictException 409: ROLLBACK
+        end
+        Pagos -> Juguetes : descontarStock(gestor, líneas del pedido)
+        loop cada línea, en orden de id del juguete
+          Juguetes -> BD : UPDATE juguetes SET stock = stock − cantidad\nWHERE id AND activo AND stock >= cantidad
+        end
+        opt alguna fila no cambió: otro cliente compró las últimas unidades
+          Juguetes -> BD : SELECT stock actual de esos juguetes
+          Juguetes --> Pagos : ConflictException { juguetes }: ROLLBACK,\nel pedido sigue Pendiente y no se descuenta nada
+          Pagos --> Controller : 409 con los juguetes
+          Controller --> Pagina : 409 «Algunos juguetes ya no tienen stock suficiente»
+          Pagina --> Cliente : «No pudimos completar el pago» con cada juguete\ny su stock; no se cobró nada
+        end
+        Pagos -> BD : INSERT pagos (últimos 4 dígitos, aprobado = verdadero)
+      end
+      Pagos --> Controller : Pago
+      deactivate Pagos
+      Controller -> Controller : aPagoDto(pago)
+      Controller --> Pagina : 201 PagoDto { numero, estado PAGADO,\nmonto, ultimosDigitos }
+      deactivate Controller
+      Pagina --> Cliente : «¡Pago aprobado!» con el número de pedido,\nel monto y la tarjeta terminada en los 4 dígitos
+    end
+  end
+end
+deactivate Pagina
+
+legend bottom
+  • El usuarioId sale del token (JwtAuthGuard): un cliente solo puede pagar sus propios pedidos; con otro número responde 404.
+  • Del pago solo se guardan los últimos 4 dígitos y el resultado: el número completo, el titular, el vencimiento y el CVV existen solo durante la petición.
+  • Pagado, descuento del stock y pago aprobado van en una sola transacción: si falta stock o el pedido ya se pagó, ROLLBACK y no cambia nada.
+  • Los UPDATE condicionales evitan cobrar dos veces y vender de más aunque lleguen dos pagos a la vez. Además, un índice único parcial
+     (pedido_id WHERE aprobado) admite un solo pago aprobado por pedido, y un CHECK impide que el stock quede negativo.
+  • La tarjeta de rechazo de prueba es cualquiera que termine en 0000: se guarda el intento rechazado y el cliente puede volver a intentar.
+endlegend
+@enduml

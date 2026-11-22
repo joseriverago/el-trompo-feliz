@@ -43,8 +43,10 @@ class PagosController <<controller>> {
   + pagar(usuario: UsuarioSesion, numero: string, tarjeta: TarjetaDto): Promise<PagoDto>
 }
 class PagosService <<service>> {
+  - pagos: Repository<Pago>
   - fuenteDatos: DataSource
   + pagar(usuarioId: number, numero: string, tarjeta: TarjetaDto): Promise<Pago>
+  - aprobar(pedido: Pedido, ultimosDigitos: string): Promise<Pago>
   - validarTarjeta(tarjeta: TarjetaDto): void
   - esTarjetaRechazada(numero: string): boolean
 }
@@ -81,21 +83,26 @@ PedidosService ..> Pedido
 PagosService ..> Pago
 
 note right of PagosService
-  pagar() abre una transacción:
-  valida la tarjeta, verifica el stock,
-  guarda el Pago, descuenta el stock y
-  marca el pedido Pagado. Si algo falla,
-  no se guarda nada (CU-10, HU-09).
+  pagar() revisa el vencimiento y busca
+  el pedido. Si la tarjeta termina en 0000,
+  guarda el intento rechazado (402).
+  Si se aprueba, aprobar() abre una
+  transacción: marca el pedido Pagado,
+  descuenta el stock y guarda el Pago.
+  Si algo falla, no se guarda nada
+  (CU-10, HU-09).
 end note
 
 legend bottom
   • Todas las rutas de esta vista usan JwtAuthGuard: el usuarioId sale del token, nunca del cuerpo de la petición.
   • Ya están implementados obtener/obtenerCarrito y agregar/agregarJuguete (HU-05; su secuencia está en el diagrama 06a),
-     cambiarCantidad y quitar/quitarItem (HU-06), y generar/generarPedido, obtenerMio/obtenerPedido y vaciar (HU-08; su secuencia está en el diagrama 06b).
+     cambiarCantidad y quitar/quitarItem (HU-06), generar/generarPedido, obtenerMio/obtenerPedido y vaciar (HU-08; su secuencia está en el diagrama 06b),
+     y pagar, marcarPagado y descontarStock (HU-09; su secuencia está en el diagrama 06c).
   • cambiarCantidad() y quitarItem() buscan la línea dentro del carrito del usuario del token: con la línea de otro cliente responden 404.
   • generarPedido() verifica el stock de cada línea; luego guarda el pedido Pendiente y llama a vaciar() en la misma transacción (fuenteDatos).
   • obtenerPedido() busca por número y por usuarioId, así un cliente no puede ver el pedido de otro («Pedido no encontrado»).
   • listarTodos() y cambiarEstado() usan además RolesGuard (solo ADMINISTRADOR).
+  • marcarPagado() y descontarStock() son UPDATE condicionales (solo si sigue Pendiente, solo si hay stock): dos pagos simultáneos no cobran dos veces ni venden de más.
   • TarjetaDto solo existe durante la petición: del pago se guardan los últimos 4 dígitos y el resultado.
 endlegend
 @enduml
