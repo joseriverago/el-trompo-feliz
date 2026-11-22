@@ -39,7 +39,7 @@ export function BotonAgregarCarrito({ jugueteId, className = "" }: { jugueteId: 
     setAviso(null);
     try {
       const resultado = await agregarAlCarrito(sesion.token, jugueteId);
-      if (resultado.tipo === "agregado") {
+      if (resultado.tipo === "listo") {
         guardarCarrito(resultado.carrito);
         const cantidad = resultado.carrito.items.find((item) => item.jugueteId === jugueteId)?.cantidad ?? 1;
         setAviso({
@@ -48,7 +48,7 @@ export function BotonAgregarCarrito({ jugueteId, className = "" }: { jugueteId: 
         });
       } else if (resultado.tipo === "sin-stock") {
         setAviso({ tipo: "error", texto: resultado.mensaje });
-      } else if (resultado.tipo === "no-disponible") {
+      } else if (resultado.tipo === "no-encontrado") {
         setAviso({ tipo: "error", texto: "Este juguete ya no está disponible" });
       } else {
         // La API ya no acepta el token: se cierra la sesión y se pide iniciarla otra vez.

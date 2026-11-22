@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { FindOneOptions, Repository } from 'typeorm';
 import { esViolacionUnica } from '../database/errores.js';
@@ -11,6 +11,8 @@ const CON_ITEMS: Omit<FindOneOptions<Carrito>, 'where'> = {
   relations: { items: { juguete: true } },
   order: { items: { id: 'ASC' } },
 };
+
+export const LINEA_NO_ENCONTRADA = 'Este juguete ya no está en tu carrito';
 
 @Injectable()
 export class CarritoService {
@@ -61,6 +63,47 @@ export class CarritoService {
       await this.items.insert({ carritoId: carrito.id, jugueteId, cantidad });
     }
     return this.obtenerCarrito(usuarioId);
+  }
+
+  /**
+   * Cambia la cantidad de una línea del carrito (HU-06). La cantidad ya llega validada
+   * (entero de 1 o más); aquí IInventario verifica que no supere el stock: si no alcanza,
+   * responde 409 «Solo quedan N unidades» y la línea no cambia.
+   */
+  async cambiarCantidad(
+    usuarioId: number,
+    itemId: number,
+    cantidad: number,
+  ): Promise<Carrito> {
+    const item = await this.buscarLinea(usuarioId, itemId);
+    await this.juguetesService.verificarStock(item.jugueteId, cantidad);
+    await this.items.update({ id: item.id }, { cantidad });
+    return this.obtenerCarrito(usuarioId);
+  }
+
+  /** Quita una línea del carrito (HU-06) y devuelve el carrito sin ella. */
+  async quitarItem(usuarioId: number, itemId: number): Promise<Carrito> {
+    const item = await this.buscarLinea(usuarioId, itemId);
+    await this.items.delete({ id: item.id });
+    return this.obtenerCarrito(usuarioId);
+  }
+
+  /**
+   * La línea se busca dentro del carrito del cliente del token: así nadie puede cambiar
+   * ni quitar una línea del carrito de otra persona. Si no está, responde 404.
+   */
+  private async buscarLinea(
+    usuarioId: number,
+    itemId: number,
+  ): Promise<ItemCarrito> {
+    const carrito = await this.obtenerCarrito(usuarioId);
+    const item = carrito.items.find((linea) => linea.id === itemId);
+    if (!item)
+      throw new NotFoundException({
+        statusCode: 404,
+        message: LINEA_NO_ENCONTRADA,
+      });
+    return item;
   }
 
   private buscar(usuarioId: number): Promise<Carrito | null> {

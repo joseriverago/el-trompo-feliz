@@ -94,6 +94,6 @@ legend bottom
   • Cada interfaz la realiza un service de NestJS (flecha de realización); listarCategorias y las operaciones de categorías las realiza CategoriasService.
   • Las operaciones que reciben un EntityManager participan en la transacción del pago: o se guarda todo o no se guarda nada.
   • Los nombres coinciden con las clases de diseño (04b, 04c) y con el código; ya están implementadas listarCatalogo, obtenerDetalle,
-     registrar, iniciarSesion, verificarToken, verificarStock, obtenerCarrito y agregarJuguete.
+     registrar, iniciarSesion, verificarToken, verificarStock, obtenerCarrito, agregarJuguete, cambiarCantidad y quitarItem.
 endlegend
 @enduml

@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Juguete } from '../juguetes/entities/juguete.entity.js';
@@ -64,7 +64,7 @@ describe('CarritoService', () => {
     findOneOrFail: vi.fn(),
     insert: vi.fn(),
   };
-  const items = { insert: vi.fn(), update: vi.fn() };
+  const items = { insert: vi.fn(), update: vi.fn(), delete: vi.fn() };
   const juguetesService = { verificarStock: vi.fn() };
 
   beforeEach(async () => {
@@ -94,6 +94,10 @@ describe('CarritoService', () => {
           return Promise.resolve();
         },
       );
+    items.delete.mockReset().mockImplementation((donde: { id: number }) => {
+      bd.lineas = bd.lineas.filter((linea) => linea.id !== donde.id);
+      return Promise.resolve();
+    });
     juguetesService.verificarStock.mockReset().mockResolvedValue({});
 
     const modulo: TestingModule = await Test.createTestingModule({
@@ -192,6 +196,89 @@ describe('CarritoService', () => {
     const carrito = await servicio.obtenerCarrito(CLIENTE);
 
     expect(carrito.id).toBe(3);
+  });
+
+  describe('cambiarCantidad (HU-06)', () => {
+    beforeEach(() => {
+      bd.crearCarrito();
+      bd.agregarLinea(ABACO.id, 2); // línea 100
+      bd.agregarLinea(AJEDREZ.id, 1); // línea 101
+    });
+
+    it('guarda la nueva cantidad después de verificar el stock', async () => {
+      const carrito = await servicio.cambiarCantidad(CLIENTE, 100, 4);
+
+      expect(juguetesService.verificarStock).toHaveBeenCalledWith(ABACO.id, 4);
+      expect(items.update).toHaveBeenCalledWith({ id: 100 }, { cantidad: 4 });
+      expect(carrito.buscarItem(ABACO.id)?.cantidad).toBe(4);
+      expect(carrito.buscarItem(AJEDREZ.id)?.cantidad).toBe(1);
+    });
+
+    it('también guarda una cantidad menor', async () => {
+      const carrito = await servicio.cambiarCantidad(CLIENTE, 100, 1);
+
+      expect(carrito.buscarItem(ABACO.id)?.cantidad).toBe(1);
+    });
+
+    it('si la cantidad supera el stock, responde 409 y la línea no cambia', async () => {
+      juguetesService.verificarStock.mockRejectedValue(
+        new ConflictException({
+          statusCode: 409,
+          message: 'Solo quedan 2 unidades',
+          stock: 2,
+        }),
+      );
+
+      const intento = servicio.cambiarCantidad(CLIENTE, 101, 3);
+
+      await expect(intento).rejects.toThrow('Solo quedan 2 unidades');
+      expect(juguetesService.verificarStock).toHaveBeenCalledWith(
+        AJEDREZ.id,
+        3,
+      );
+      expect(items.update).not.toHaveBeenCalled();
+      expect(bd.lineas[1].cantidad).toBe(1);
+    });
+
+    it('si la línea no está en el carrito del cliente, responde 404 «Este juguete ya no está en tu carrito»', async () => {
+      const intento = servicio.cambiarCantidad(CLIENTE, 555, 2);
+
+      await expect(intento).rejects.toBeInstanceOf(NotFoundException);
+      await expect(intento).rejects.toThrow(
+        'Este juguete ya no está en tu carrito',
+      );
+      expect(juguetesService.verificarStock).not.toHaveBeenCalled();
+      expect(items.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('quitarItem (HU-06)', () => {
+    beforeEach(() => {
+      bd.crearCarrito();
+      bd.agregarLinea(ABACO.id, 2); // línea 100
+      bd.agregarLinea(AJEDREZ.id, 1); // línea 101
+    });
+
+    it('quita la línea y devuelve el carrito sin ella', async () => {
+      const carrito = await servicio.quitarItem(CLIENTE, 100);
+
+      expect(items.delete).toHaveBeenCalledWith({ id: 100 });
+      expect(carrito.items.map((item) => item.jugueteId)).toEqual([AJEDREZ.id]);
+    });
+
+    it('al quitar la última línea, el carrito queda vacío', async () => {
+      await servicio.quitarItem(CLIENTE, 100);
+      const carrito = await servicio.quitarItem(CLIENTE, 101);
+
+      expect(carrito.items).toEqual([]);
+    });
+
+    it('si la línea ya no está (por ejemplo, otro clic la quitó), responde 404 y no borra nada', async () => {
+      await expect(servicio.quitarItem(CLIENTE, 555)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(items.delete).not.toHaveBeenCalled();
+    });
   });
 
   it('no oculta los demás errores de la base de datos', async () => {
