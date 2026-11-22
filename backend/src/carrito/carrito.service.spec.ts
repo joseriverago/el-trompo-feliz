@@ -3,6 +3,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Juguete } from '../juguetes/entities/juguete.entity.js';
 import { JuguetesService } from '../juguetes/juguetes.service.js';
+import { aCarritoDto } from './carrito-dto.js';
 import { CarritoService } from './carrito.service.js';
 import { Carrito } from './entities/carrito.entity.js';
 import { ItemCarrito } from './entities/item-carrito.entity.js';
@@ -278,6 +279,43 @@ describe('CarritoService', () => {
         NotFoundException,
       );
       expect(items.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('subtotales y total (HU-07)', () => {
+    beforeEach(() => {
+      bd.crearCarrito();
+      bd.agregarLinea(ABACO.id, 2); // línea 100: 2 × 24.90
+      bd.agregarLinea(AJEDREZ.id, 1); // línea 101: 1 × 59.90
+    });
+
+    const resumen = (carrito: Carrito) => {
+      const dto = aCarritoDto(carrito);
+      return {
+        subtotales: dto.items.map((item) => item.subtotal),
+        total: dto.total,
+      };
+    };
+
+    it('el carrito guardado trae cada subtotal (precio × cantidad) y el total', async () => {
+      expect(resumen(await servicio.obtenerCarrito(CLIENTE))).toEqual({
+        subtotales: [49.8, 59.9],
+        total: 109.7,
+      });
+    });
+
+    it('al cambiar una cantidad, el carrito devuelto ya tiene el subtotal y el total recalculados', async () => {
+      expect(resumen(await servicio.cambiarCantidad(CLIENTE, 100, 3))).toEqual({
+        subtotales: [74.7, 59.9],
+        total: 134.6,
+      });
+    });
+
+    it('al quitar un juguete, el total deja de sumar su subtotal', async () => {
+      expect(resumen(await servicio.quitarItem(CLIENTE, 101))).toEqual({
+        subtotales: [49.8],
+        total: 49.8,
+      });
     });
   });
 
