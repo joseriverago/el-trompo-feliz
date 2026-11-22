@@ -393,11 +393,13 @@ Las historias se estiman en puntos de historia con la baraja de Planning Poker y
 - **Velocidad prevista:** 30 puntos por sprint. Es una estimación inicial, porque es el primer sprint del equipo con este producto; se ajusta con la velocidad real del Sprint 1.
 - **Sprints necesarios:** 60 ÷ 30 = 2 sprints.
 - **Velocidad real del Sprint 1:** 5 puntos (HU-01 y HU-02). El sprint concentró la infraestructura y el modelado UML, que no llevan puntos; el detalle está en la [Sprint Review del Sprint 1](sprint-1-review.md#6-burndown-y-velocidad). El alcance del Sprint 2 se ajusta en su Sprint Planning.
+- **Velocidad real del Sprint 2:** 24 puntos (HU-03 a HU-09), todo lo comprometido. Las 3 tareas técnicas (T-06 a T-08) también se terminaron; el detalle está en la [Sprint Review del Sprint 2](sprint-2-review.md#6-burndown-y-velocidad).
+- **Proyección para v2.0:** con 24 puntos por sprint, las 6 historias de prioridad Alta (HU-10 a HU-15, 18 puntos) caben en un Sprint 3. Las 5 de prioridad Media (HU-16 a HU-20, 13 puntos) entrarían por orden si queda capacidad; si no, pasarían a un Sprint 4.
 
-| Release | Contenido | Sprint | Puntos | Fecha |
-|---|---|---|---|---|
-| v1.0: Compra en línea | HU-01 a HU-09 | Sprint 1 y Sprint 2 | 29 | 22/11/2026 (fin del Sprint 2). HU-01 y HU-02 se terminaron en el Sprint 1; HU-03 a HU-09 están en el Sprint 2 |
-| v2.0: Seguimiento y administración | HU-10 a HU-20 | Sprint 3, si el docente amplía el plazo | 31 | Por confirmar |
+| Release | Contenido | Sprint | Puntos | Fecha | Estado |
+|---|---|---|---|---|---|
+| v1.0: Compra en línea | HU-01 a HU-09 | Sprint 1 (HU-01 y HU-02) y Sprint 2 (HU-03 a HU-09) | 29 | 22/11/2026 (fin del Sprint 2) | Terminada y publicada |
+| v2.0: Seguimiento y administración | HU-10 a HU-20 | Sprint 3, si el docente amplía el plazo | 31 | Por confirmar | En el Product Backlog |
 
 **Objetivos de los sprints (Sprint Goal)**
 
