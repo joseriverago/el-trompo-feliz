@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { ContadorCarrito } from "@/components/contador-carrito";
 import { useSesion } from "@/lib/sesion";
 
-/** Parte derecha del encabezado: el nombre del cliente con sesión iniciada, o los enlaces para entrar o crear una cuenta. */
+/**
+ * Parte derecha del encabezado: con sesión iniciada, el contador del carrito y el nombre del cliente;
+ * sin sesión, los enlaces para entrar o crear una cuenta.
+ */
 export function MenuCuenta() {
   const sesion = useSesion();
 
@@ -13,9 +17,12 @@ export function MenuCuenta() {
   if (sesion) {
     const primerNombre = sesion.usuario.nombre.split(" ")[0];
     return (
-      <p className="text-sm" title={sesion.usuario.nombre}>
-        Hola, <span className="font-semibold">{primerNombre}</span>
-      </p>
+      <div className="flex items-center gap-5">
+        <ContadorCarrito token={sesion.token} />
+        <p className="text-sm" title={sesion.usuario.nombre}>
+          Hola, <span className="font-semibold">{primerNombre}</span>
+        </p>
+      </div>
     );
   }
 

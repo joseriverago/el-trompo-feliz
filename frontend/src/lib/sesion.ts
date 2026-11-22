@@ -76,6 +76,12 @@ export function guardarSesion(sesion: Sesion): void {
   oyentes.forEach((oyente) => oyente());
 }
 
+/** Olvida la sesión guardada, por ejemplo cuando la API dice que el token ya no sirve. */
+export function borrarSesion(): void {
+  localStorage.removeItem(CLAVE);
+  oyentes.forEach((oyente) => oyente());
+}
+
 /**
  * Sesión actual. Devuelve `undefined` mientras se genera la página en el servidor y durante
  * la hidratación (todavía no se sabe), y después la sesión guardada o `null`.
