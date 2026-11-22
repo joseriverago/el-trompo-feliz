@@ -1,6 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import type { FindOneOptions, Repository } from 'typeorm';
+import {
+  type EntityManager,
+  type FindOneOptions,
+  In,
+  type Repository,
+} from 'typeorm';
 import { esViolacionUnica } from '../database/errores.js';
 import { JuguetesService } from '../juguetes/juguetes.service.js';
 import { Carrito } from './entities/carrito.entity.js';
@@ -13,6 +22,8 @@ const CON_ITEMS: Omit<FindOneOptions<Carrito>, 'where'> = {
 };
 
 export const LINEA_NO_ENCONTRADA = 'Este juguete ya no está en tu carrito';
+export const CARRITO_CAMBIO =
+  'Tu carrito cambió mientras comprabas: revísalo y vuelve a intentarlo';
 
 @Injectable()
 export class CarritoService {
@@ -86,6 +97,24 @@ export class CarritoService {
     const item = await this.buscarLinea(usuarioId, itemId);
     await this.items.delete({ id: item.id });
     return this.obtenerCarrito(usuarioId);
+  }
+
+  /**
+   * ICarrito: vacía el carrito al generar el pedido (HU-08), dentro de la transacción del
+   * pedido (`gestor`). Borra exactamente las líneas que se copiaron al pedido: si alguna ya no
+   * está (por ejemplo, un doble clic en «Continuar al pago» generó el pedido un instante antes),
+   * responde 409 y la transacción se deshace, así el mismo carrito no genera dos pedidos.
+   */
+  async vaciar(gestor: EntityManager, carrito: Carrito): Promise<void> {
+    const ids = carrito.items.map((item) => item.id);
+    if (ids.length === 0) return;
+    const { affected } = await gestor.delete(ItemCarrito, {
+      carritoId: carrito.id,
+      id: In(ids),
+    });
+    if (affected !== ids.length) {
+      throw new ConflictException({ statusCode: 409, message: CARRITO_CAMBIO });
+    }
   }
 
   /**

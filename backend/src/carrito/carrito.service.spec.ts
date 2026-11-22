@@ -1,10 +1,11 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { type EntityManager, In } from 'typeorm';
 import type { Juguete } from '../juguetes/entities/juguete.entity.js';
 import { JuguetesService } from '../juguetes/juguetes.service.js';
 import { aCarritoDto } from './carrito-dto.js';
-import { CarritoService } from './carrito.service.js';
+import { CARRITO_CAMBIO, CarritoService } from './carrito.service.js';
 import { Carrito } from './entities/carrito.entity.js';
 import { ItemCarrito } from './entities/item-carrito.entity.js';
 
@@ -326,5 +327,41 @@ describe('CarritoService', () => {
     await expect(servicio.agregarJuguete(CLIENTE, ABACO.id)).rejects.toThrow(
       'sin conexión',
     );
+  });
+
+  describe('vaciar (HU-08)', () => {
+    const gestor = { delete: vi.fn() };
+
+    beforeEach(() => {
+      gestor.delete.mockReset();
+      bd.crearCarrito();
+      bd.agregarLinea(ABACO.id, 2);
+      bd.agregarLinea(AJEDREZ.id, 1);
+    });
+
+    it('borra, dentro de la transacción del pedido, las líneas que se copiaron al pedido', async () => {
+      gestor.delete.mockResolvedValue({ affected: 2 });
+
+      await servicio.vaciar(
+        gestor as unknown as EntityManager,
+        bd.leerCarrito() as Carrito,
+      );
+
+      expect(gestor.delete).toHaveBeenCalledWith(ItemCarrito, {
+        carritoId: 3,
+        id: In([100, 101]),
+      });
+    });
+
+    it('si alguna línea ya no estaba (doble clic en «Continuar al pago»), responde 409', async () => {
+      gestor.delete.mockResolvedValue({ affected: 0 });
+
+      await expect(
+        servicio.vaciar(
+          gestor as unknown as EntityManager,
+          bd.leerCarrito() as Carrito,
+        ),
+      ).rejects.toThrow(CARRITO_CAMBIO);
+    });
   });
 });
