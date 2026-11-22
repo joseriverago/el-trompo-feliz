@@ -10,9 +10,9 @@ Fuentes en PlantUML (`.puml`) y sus imágenes en [`png/`](png/). Cada diagrama u
 | 4 | Clases de diseño | Diseño | ETF-32 | [04a dominio](png/04a-clases-diseno-dominio.png) · [04b catálogo y cuentas](png/04b-clases-diseno-catalogo-cuentas.png) · [04c compra](png/04c-clases-diseno-compra.png) |
 | 5 | Subsistemas con interfaces | Diseño | ETF-32 | [05a interfaces](png/05a-subsistemas-interfaces.png) · [05b operaciones](png/05b-subsistemas-operaciones.png) |
 | 6 | Secuencia: Agregar producto al carrito, Realizar compra y Gestionar productos | Diseño | ETF-33 | [06a agregar al carrito](png/06a-secuencia-agregar-carrito.png) · [06b realizar compra 1/2](png/06b-secuencia-realizar-compra.png) (generación del pedido) · [06c realizar compra 2/2](png/06c-secuencia-pagar-pedido.png) (pago simulado) · [06d gestionar productos 1/2](png/06d-secuencia-gestionar-productos.png) (registrar y editar) · [06e gestionar productos 2/2](png/06e-secuencia-eliminar-juguete.png) (eliminar) |
-| 7 | Componentes y artefactos | Implementación | ETF-34 | |
-| 8 | Despliegue (descriptor) | Despliegue | ETF-34 | |
-| 9 | Despliegue (instancia) | Despliegue | ETF-34 | |
+| 7 | Componentes y artefactos | Implementación | ETF-34 | [07a componentes](png/07a-componentes.png) · [07b artefactos](png/07b-artefactos.png) |
+| 8 | Despliegue (descriptor) | Despliegue | ETF-34 | [08-despliegue-descriptor](png/08-despliegue-descriptor.png) |
+| 9 | Despliegue (instancia) | Despliegue | ETF-34 | [09-despliegue-instancia](png/09-despliegue-instancia.png) |
 
 ## Cómo regenerar las imágenes
 
@@ -138,3 +138,35 @@ Cada diagrama de secuencia se hace junto con la historia que implementa su caso 
 - **CU-12 Gestionar productos (2/2): eliminar (HU-20).** Después de confirmar, la tienda llama a `DELETE /juguetes/{id}` y `JuguetesService.desactivar` pone `activo = falso`: no se borra la fila, así que los pedidos anteriores conservan sus datos.
 - **Fragmentos `alt` y `ref`.** Cancelar no llama a la API; un juguete que ya estaba eliminado responde 404. El `ref` reutiliza la verificación de sesión y rol del diagrama 06d.
 - **Efecto en la compra.** El catálogo, el carrito y la compra solo consideran juguetes activos: si el juguete estaba en un carrito, al comprar la API responde 409 «Ajusta tu carrito» y lo marca «Este juguete ya no está a la venta».
+
+## 7. Implementación
+
+Los componentes y los artefactos salen de la estructura real del repositorio: cada componente es una carpeta de `frontend/src` o `backend/src`, y cada artefacto es un archivo del repositorio o uno que genera la compilación.
+
+![Implementación: componentes](png/07a-componentes.png)
+
+- **Cinco subsistemas, cinco módulos NestJS.** Usuarios y autenticación (`auth/`, `usuarios/`), Catálogo (`juguetes/`, `categorias/`), Carrito, Pedidos y Pagos son los subsistemas del diagrama 05a; `AppModule` los importa a todos.
+- **Dependencias por interfaces.** Cada flecha sale de lo que importa un `*.module.ts`: Carrito requiere ISesion e IInventario; Pedidos, además, ICarrito; Pagos, además, IPedidos. ISesion es `AuthService` con `JwtAuthGuard`, e IInventario es `JuguetesService`.
+- **Frontend.** Las páginas de `app/` usan los componentes de `components/`, y estos llaman a la API con los clientes de `lib/`. Las librerías npm de cada lado salen de su `package.json`.
+
+![Implementación: artefactos](png/07b-artefactos.png)
+
+- **«manifest».** Cada carpeta compilada de `backend/dist/` manifiesta el módulo del mismo nombre, `dist/main.js` manifiesta el arranque y `.next/` manifiesta la tienda completa.
+- **Lo que no se sube a Git.** `.next/` y `dist/` se generan con `next build` y `nest build` («derive»); Vercel y Render los compilan desde `src/` en cada cambio integrado en `main`.
+- **Configuración sin secretos.** `package.json` fija Node 24.x y los comandos de compilación; `.env.example` lista los nombres de las variables, y sus valores solo están en los paneles de Vercel y Render.
+
+## 8 y 9. Despliegue
+
+Los dos diagramas muestran el despliegue real de producción: la tienda en Vercel, la API en Render y la base de datos en Neon. El descriptor (08) muestra los tipos de nodo y los atributos de configuración; la instancia (09), los nodos concretos con sus valores.
+
+![Despliegue: descriptor](png/08-despliegue-descriptor.png)
+
+- **Nodos y entornos de ejecución.** Cliente con su navegador, red de borde de Vercel (CDN), Vercel Functions (Node.js 24), red de borde de Render (Cloudflare), Web Service de Render (Node.js 24), Neon (pooler PgBouncer y PostgreSQL 18), GitHub y la PC del equipo.
+- **Artefactos desplegados.** Las páginas prerenderizadas y `.next/static` van a la red de borde; `.next/server` (rutas dinámicas), a Vercel Functions; `dist/main.js` y la carpeta compilada de cada módulo, a Render; el esquema `trompo_feliz`, a PostgreSQL. Cada servidor tiene su «deployment spec».
+- **Protocolos.** El navegador usa HTTPS con Vercel y HTTPS + JSON con la API (JWT en la cabecera Authorization, CORS limitado a `FRONTEND_URL`); la API y `npm run db:preparar` usan SQL sobre TLS con Neon; GitHub avisa a Vercel y a Render por webhook HTTPS para desplegar.
+
+![Despliegue: instancia](png/09-despliegue-instancia.png)
+
+- **Valores reales.** `el-trompo-feliz-jrivera.vercel.app` (borde `gru1`, funciones en `iad1`), `el-trompo-feliz-api.onrender.com` (plan Free, Virginia, health check `/`) y Neon `trompo-feliz` en AWS us-east-1 con PostgreSQL 18.7.
+- **Cómo se comprobó.** Con las cabeceras de respuesta (`x-vercel-id`, `x-vercel-cache`, `server: cloudflare`), la configuración de cada panel y la versión que devuelve PostgreSQL. La URL de la API es la que Next.js incrustó en los bundles de producción.
+- **Sin secretos.** De `DATABASE_URL`, `FRONTEND_URL` y `JWT_SECRET` solo se muestran los nombres.
