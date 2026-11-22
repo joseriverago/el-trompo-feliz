@@ -33,4 +33,10 @@ Proyecto conectado al repositorio de GitHub. Cada cambio integrado en `main` se 
 | Versión de Node | 24, tomada de `engines` en `package.json` |
 | Variable de entorno | `NEXT_PUBLIC_API_URL` con la URL del backend en Render |
 
-La página de inicio muestra si la tienda está en línea: consulta `GET /salud` en la API, que a su vez comprueba la conexión con PostgreSQL.
+## Páginas
+
+| Ruta | Contenido |
+|---|---|
+| `/` | Catálogo de juguetes (HU-01): imagen, nombre, precio en soles, categoría y edad recomendada. Los juguetes sin stock se marcan «Agotado» |
+
+El catálogo se carga en el navegador desde `GET /juguetes`. Mientras la API de Render despierta muestra un aviso de carga, y si no responde ofrece el botón «Reintentar».

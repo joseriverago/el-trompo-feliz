@@ -34,6 +34,28 @@ describe('AppController (e2e)', () => {
       .expect({ estado: 'ok', baseDeDatos: 'conectada' });
   });
 
+  it('GET /juguetes devuelve el catálogo con la categoría de cada juguete', async () => {
+    const respuesta = await request(app.getHttpServer())
+      .get('/juguetes')
+      .expect(200);
+
+    const juguetes = respuesta.body as Array<Record<string, unknown>>;
+    expect(juguetes.length).toBeGreaterThan(0);
+    for (const juguete of juguetes) {
+      expect(juguete).toEqual({
+        id: expect.any(Number),
+        nombre: expect.any(String),
+        precio: expect.any(Number),
+        imagenUrl: expect.any(String),
+        edadMinima: expect.any(Number),
+        edadMaxima: expect.any(Number),
+        stock: expect.any(Number),
+        agotado: juguete.stock === 0,
+        categoria: { id: expect.any(Number), nombre: expect.any(String) },
+      });
+    }
+  });
+
   afterEach(async () => {
     await app.close();
   });
