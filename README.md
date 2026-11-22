@@ -57,6 +57,7 @@ Las variables de entorno se documentan en el archivo `.env.example` de cada proy
 - Cada historia o tarea se desarrolla en una rama `feature/ETF-<número>-<descripción>` y se integra a `main` con un pull request.
 - Cada commit cita la clave de Jira, por ejemplo: `ETF-28 crea la estructura del repositorio`.
 - Sprint 1 (21/11/2026): [Sprint Review](docs/scrum/sprint-1-review.md) y [Retrospectiva](docs/scrum/sprint-1-retrospectiva.md).
+- Sprint 2 (22/11/2026): [Sprint Planning](docs/scrum/sprint-2-planning.md).
 
 ## Aplicación publicada
 
