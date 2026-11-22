@@ -28,3 +28,12 @@ export function aJugueteCatalogo(juguete: Juguete): JugueteCatalogo {
     categoria: { id: juguete.categoria.id, nombre: juguete.categoria.nombre },
   };
 }
+
+/** Datos de la página de detalle: los del catálogo más la descripción. */
+export interface JugueteDetalle extends JugueteCatalogo {
+  descripcion: string;
+}
+
+export function aJugueteDetalle(juguete: Juguete): JugueteDetalle {
+  return { ...aJugueteCatalogo(juguete), descripcion: juguete.descripcion };
+}

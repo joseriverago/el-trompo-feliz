@@ -37,6 +37,7 @@ Proyecto conectado al repositorio de GitHub. Cada cambio integrado en `main` se 
 
 | Ruta | Contenido |
 |---|---|
-| `/` | Catálogo de juguetes (HU-01): imagen, nombre, precio en soles, categoría y edad recomendada. Los juguetes sin stock se marcan «Agotado» |
+| `/` | Catálogo de juguetes (HU-01): imagen, nombre, precio en soles, categoría y edad recomendada. Los juguetes sin stock se marcan «Agotado». Un clic en la tarjeta abre el detalle |
+| `/juguetes/[id]` | Detalle de un juguete (HU-02): además, descripción y unidades disponibles. Si no existe, muestra «Juguete no encontrado» con un enlace al catálogo |
 
-El catálogo se carga en el navegador desde `GET /juguetes`. Mientras la API de Render despierta muestra un aviso de carga, y si no responde ofrece el botón «Reintentar».
+El catálogo y el detalle se cargan en el navegador desde `GET /juguetes` y `GET /juguetes/:id`. Mientras la API de Render despierta muestra un aviso de carga, y si no responde ofrece el botón «Reintentar».
