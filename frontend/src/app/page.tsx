@@ -1,13 +1,13 @@
-import { EstadoServicio } from "@/components/estado-servicio";
+import { Catalogo } from "@/components/catalogo";
 
-export default function Home() {
+export default function Inicio() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-24 text-center">
-      <h1 className="text-4xl font-bold tracking-tight">El Trompo Feliz</h1>
-      <p className="max-w-md text-lg text-zinc-600 dark:text-zinc-400">
-        Tienda virtual de juguetes. Muy pronto podrás ver nuestro catálogo.
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
+      <h1 className="text-3xl font-bold tracking-tight">Catálogo de juguetes</h1>
+      <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+        Todos los juguetes de la tienda, con su precio y la edad recomendada.
       </p>
-      <EstadoServicio />
+      <Catalogo />
     </main>
   );
 }
