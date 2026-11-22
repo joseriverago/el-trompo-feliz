@@ -4,6 +4,12 @@ import { Repository } from 'typeorm';
 import { Juguete } from './entities/juguete.entity.js';
 import { aJugueteCatalogo, type JugueteCatalogo } from './juguete-catalogo.js';
 
+/**
+ * Orden alfabético en español: «Ábaco» va junto a «Ajedrez». PostgreSQL en Neon
+ * ordena por código de carácter y dejaría las vocales con tilde después de la «Z».
+ */
+const ORDEN_ALFABETICO = new Intl.Collator('es', { sensitivity: 'base' });
+
 @Injectable()
 export class JuguetesService {
   constructor(
@@ -16,8 +22,9 @@ export class JuguetesService {
     const juguetes = await this.juguetes.find({
       where: { activo: true },
       relations: { categoria: true },
-      order: { nombre: 'ASC' },
     });
-    return juguetes.map(aJugueteCatalogo);
+    return juguetes
+      .sort((a, b) => ORDEN_ALFABETICO.compare(a.nombre, b.nombre))
+      .map(aJugueteCatalogo);
   }
 }
