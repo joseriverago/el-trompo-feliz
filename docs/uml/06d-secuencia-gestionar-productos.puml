@@ -1,0 +1,129 @@
+@startuml 06d-secuencia-gestionar-productos
+!include estilo.iuml
+skinparam maxMessageSize 220
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam sequence {
+  ParticipantBackgroundColor #FFFBEB
+  ParticipantBorderColor #B45309
+  ParticipantFontStyle bold
+  ActorBackgroundColor #FEF3C7
+  ActorBorderColor #92400E
+  LifeLineBorderColor #B45309
+  LifeLineBackgroundColor #FEF3C7
+  GroupBorderColor #92400E
+  GroupBackgroundColor #FEF3C7
+  GroupHeaderFontColor #78350F
+  DividerBackgroundColor #FEF3C7
+  DividerBorderColor #B45309
+}
+skinparam database {
+  BackgroundColor #FFFBEB
+  BorderColor #B45309
+}
+skinparam boundary {
+  BackgroundColor #FEF3C7
+  BorderColor #92400E
+}
+skinparam control {
+  BackgroundColor #FEF3C7
+  BorderColor #92400E
+}
+
+title Secuencia · CU-12 Gestionar productos (1/2): registrar y editar juguetes (HU-12)
+
+actor Administrador
+boundary "VistaAdminJuguetes y\nFormularioJuguete\n(Next.js)" as Pagina
+control "JwtAuthGuard" as Guard
+control "RolesGuard" as Roles
+control "JuguetesController" as Controller
+participant "JuguetesService\n(ICatalogo,\nIAdminCatalogo)" as Juguetes
+database "PostgreSQL\n(Neon)" as BD
+
+Administrador -> Pagina : entra a «Administración > Juguetes»\n(/admin/juguetes)
+activate Pagina
+
+alt no hay sesión guardada en el navegador
+  Pagina --> Administrador : lleva a iniciar sesión\n(después vuelve a /admin/juguetes)
+else la sesión no es de rol ADMINISTRADOR
+  Pagina --> Administrador : «Tu cuenta no tiene acceso\na la administración»;\nno se llama a la API\n(HU-12, criterio 5)
+else sesión de administrador
+  Pagina -> Controller : GET /juguetes\n(ruta pública del catálogo)
+  activate Controller
+  Controller -> Juguetes : listarCatalogo()
+  activate Juguetes
+  Juguetes -> BD : SELECT juguetes activos\ncon su categoría
+  BD --> Juguetes : Juguete[]
+  Juguetes --> Controller : Juguete[]
+  deactivate Juguetes
+  Controller --> Pagina : 200 JugueteCatalogo[]
+  deactivate Controller
+  Pagina --> Administrador : lista con nombre, categoría,\nprecio y stock, y el botón\n«Nuevo juguete» (HU-12, criterio 1)
+
+  loop cada juguete que el administrador registra o edita
+    Administrador -> Pagina : presiona «Nuevo juguete» o «Editar»,\ncompleta nombre, descripción, precio,\nimagen (URL), categoría, edades\ny stock inicial (solo al registrar),\ny presiona «Guardar»
+    Pagina -> Pagina : validarJuguete(datos)
+    alt falta un dato, precio <= 0, edad mínima > máxima\no stock que no es un entero >= 0
+      Pagina --> Administrador : mensaje junto a cada campo\ny foco en el primero; no se\nllama a la API (HU-12, criterio 4)
+    else datos completos
+      Pagina -> Pagina : desactiva «Guardar» mientras espera\n(un doble clic no registra dos juguetes)
+      Pagina -> Guard : POST /juguetes (nuevo) o\nPUT /juguetes/{id} (editar)\nGuardarJugueteDto\nAuthorization: Bearer token
+      activate Guard
+      Guard -> Guard : verificarToken(token)\ncon AuthService (ISesion)
+      alt token inválido o vencido
+        Guard --> Pagina : 401 «Inicia sesión para continuar»
+        Pagina --> Administrador : borrarSesion() y lleva\na iniciar sesión
+      else token válido
+        Guard -> Roles : canActivate(contexto)\nrequest.user = UsuarioSesion\n{ id, nombre, rol }
+        deactivate Guard
+        activate Roles
+        alt rol distinto de ADMINISTRADOR (decorador @Roles)
+          Roles --> Pagina : 403 «No tienes permiso\npara esta acción»
+          Pagina --> Administrador : «Tu cuenta no tiene acceso\na la administración»
+        else ADMINISTRADOR
+          Roles -> Controller : registrar(datos) o editar(id, datos)\n(el pipe valida GuardarJugueteDto:\nsi falla, 400 con un mensaje por campo)
+          deactivate Roles
+          activate Controller
+          Controller -> Juguetes : registrar(datos) o\neditar(id, datos)
+          activate Juguetes
+          Juguetes -> Juguetes : edadMinima <= edadMaxima;\nsi no, 400 «La edad mínima no\npuede ser mayor que la máxima»
+          alt registrar
+            Juguetes -> BD : INSERT juguetes\n(stock inicial, activo = verdadero)
+          else editar
+            Juguetes -> BD : UPDATE juguetes SET nombre,\ndescripción, precio, imagen, edades\ny categoría (sin el stock)\nWHERE id AND activo
+            opt 0 filas: el juguete no existe o ya fue eliminado
+              Juguetes --> Controller : NotFoundException
+              Controller --> Pagina : 404 «Juguete no encontrado»
+              Pagina --> Administrador : «Este juguete ya no existe»\ny vuelve a leer la lista
+            end
+          end
+          opt la categoría ya no existe (falla la FK categoria_id)
+            Juguetes --> Controller : BadRequestException
+            Controller --> Pagina : 400 { errores: { categoriaId } }
+            Pagina --> Administrador : «Elige una categoría de la lista»
+          end
+          Juguetes -> BD : SELECT el juguete\ncon su categoría
+          BD --> Juguetes : Juguete
+          Juguetes --> Controller : Juguete
+          deactivate Juguetes
+          Controller -> Controller : aJugueteDetalle(juguete)
+          Controller --> Pagina : 201 (nuevo) o 200 (editado)\nJugueteDetalle
+          deactivate Controller
+          Pagina --> Administrador : «Juguete guardado»: la lista\ny el catálogo muestran los datos\nnuevos (HU-12, criterios 2 y 3)
+        end
+      end
+    end
+  end
+end
+deactivate Pagina
+
+legend bottom
+  • Es el diseño de HU-12 (release v2.0, Sprint 3): todavía no está en el código. Usa los nombres de las clases de diseño (04b) y de IAdminCatalogo (05b);
+     VistaAdminJuguetes y FormularioJuguete realizan la frontera PantallaAdminJuguetes del análisis (02c). Eliminar juguetes (HU-20) sigue en el diagrama 06e.
+  • Doble protección: la tienda no muestra la administración a quien no es administrador, y la API exige JwtAuthGuard y luego RolesGuard
+     (rol ADMINISTRADOR) en POST, PUT y DELETE /juguetes. La lista usa la ruta pública del catálogo, que solo devuelve juguetes activos.
+  • Editar no cambia el stock: el stock inicial solo se usa al registrar y después se cambia con actualizarStock (HU-13, CU-14),
+     para no pisar las ventas que ocurran mientras el formulario está abierto.
+  • Cambiar el precio no altera los pedidos ya generados, porque DetallePedido copió el precio (HU-08); los carritos muestran el precio nuevo.
+endlegend
+@enduml

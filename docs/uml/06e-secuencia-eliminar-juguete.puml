@@ -1,0 +1,91 @@
+@startuml 06e-secuencia-eliminar-juguete
+!include estilo.iuml
+skinparam maxMessageSize 220
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam sequence {
+  ParticipantBackgroundColor #FFFBEB
+  ParticipantBorderColor #B45309
+  ParticipantFontStyle bold
+  ActorBackgroundColor #FEF3C7
+  ActorBorderColor #92400E
+  LifeLineBorderColor #B45309
+  LifeLineBackgroundColor #FEF3C7
+  GroupBorderColor #92400E
+  GroupBackgroundColor #FEF3C7
+  GroupHeaderFontColor #78350F
+  DividerBackgroundColor #FEF3C7
+  DividerBorderColor #B45309
+  ReferenceBackgroundColor #FFFBEB
+  ReferenceBorderColor #92400E
+  ReferenceHeaderBackgroundColor #FEF3C7
+}
+skinparam database {
+  BackgroundColor #FFFBEB
+  BorderColor #B45309
+}
+skinparam boundary {
+  BackgroundColor #FEF3C7
+  BorderColor #92400E
+}
+skinparam control {
+  BackgroundColor #FEF3C7
+  BorderColor #92400E
+}
+
+title Secuencia · CU-12 Gestionar productos (2/2): eliminar juguetes (HU-20)
+
+actor Administrador
+boundary "VistaAdminJuguetes\n(Next.js)" as Pagina
+control "JwtAuthGuard" as Guard
+control "RolesGuard" as Roles
+control "JuguetesController" as Controller
+participant "JuguetesService\n(IAdminCatalogo)" as Juguetes
+database "PostgreSQL\n(Neon)" as BD
+
+Administrador -> Pagina : en la lista de /admin/juguetes\n(cargada como en el diagrama 06d)\npresiona «Eliminar» en un juguete
+activate Pagina
+Pagina --> Administrador : «¿Eliminar este juguete?\nDejará de aparecer en el catálogo.»
+
+alt presiona «Cancelar»
+  Pagina --> Administrador : el juguete sigue igual;\nno se llama a la API\n(HU-20, criterio 3)
+else confirma
+  Pagina -> Pagina : desactiva «Eliminar» mientras espera
+  Pagina -> Guard : DELETE /juguetes/{id}\nAuthorization: Bearer token
+  activate Guard
+  ref over Guard, Roles
+    Verificar la sesión y el rol, como en el diagrama 06d:
+    401 si el token no sirve; 403 si no es ADMINISTRADOR.
+  end ref
+  Guard -> Roles : canActivate(contexto)
+  deactivate Guard
+  activate Roles
+  Roles -> Controller : eliminar(id)
+  deactivate Roles
+  activate Controller
+  Controller -> Juguetes : desactivar(id)
+  activate Juguetes
+  Juguetes -> BD : UPDATE juguetes SET activo = falso\nWHERE id AND activo\n(la fila no se borra)
+  alt 0 filas: no existe o ya estaba eliminado
+    Juguetes --> Controller : NotFoundException
+    Controller --> Pagina : 404 «Juguete no encontrado»
+    Pagina --> Administrador : vuelve a leer la lista\n(otro administrador ya lo eliminó)
+  else 1 fila: desactivado
+    Juguetes --> Controller : listo
+    deactivate Juguetes
+    Controller --> Pagina : 204 sin contenido
+    deactivate Controller
+    Pagina --> Administrador : el juguete desaparece de la lista\ny del catálogo (HU-20, criterio 1)
+  end
+end
+deactivate Pagina
+
+legend bottom
+  • Es el diseño de HU-20 (release v2.0, Sprint 3): todavía no está en el código. Usa JuguetesController.eliminar y JuguetesService.desactivar (04b),
+     que realiza IAdminCatalogo.desactivarJuguete (05b). El fragmento ref reutiliza la verificación de JwtAuthGuard y RolesGuard del diagrama 06d.
+  • «Eliminar» desactiva (activo = falso) en vez de borrar: los pedidos anteriores conservan nombre, cantidad y precio en DetallePedido (HU-20, criterio 2),
+     y la FK de detalles_pedido hacia juguetes nunca queda rota.
+  • listarCatalogo, verificarStock y descontarStock solo consideran juguetes activos: el juguete sale del catálogo, ya no se puede agregar al carrito,
+     y si estaba en el carrito de un cliente, al comprar (CU-09) la API responde 409 «Ajusta tu carrito» y lo marca «Este juguete ya no está a la venta».
+endlegend
+@enduml

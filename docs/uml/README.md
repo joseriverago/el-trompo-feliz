@@ -9,7 +9,7 @@ Fuentes en PlantUML (`.puml`) y sus imágenes en [`png/`](png/). Cada diagrama u
 | 3 | Paquetes | Análisis | ETF-31 | [03-paquetes](png/03-paquetes.png) |
 | 4 | Clases de diseño | Diseño | ETF-32 | [04a dominio](png/04a-clases-diseno-dominio.png) · [04b catálogo y cuentas](png/04b-clases-diseno-catalogo-cuentas.png) · [04c compra](png/04c-clases-diseno-compra.png) |
 | 5 | Subsistemas con interfaces | Diseño | ETF-32 | [05a interfaces](png/05a-subsistemas-interfaces.png) · [05b operaciones](png/05b-subsistemas-operaciones.png) |
-| 6 | Secuencia: Agregar producto al carrito, Realizar compra y Gestionar productos | Diseño | ETF-33 | [06a agregar al carrito](png/06a-secuencia-agregar-carrito.png) · [06b realizar compra 1/2](png/06b-secuencia-realizar-compra.png) (generación del pedido) · [06c realizar compra 2/2](png/06c-secuencia-pagar-pedido.png) (pago simulado) · gestionar productos: pendiente |
+| 6 | Secuencia: Agregar producto al carrito, Realizar compra y Gestionar productos | Diseño | ETF-33 | [06a agregar al carrito](png/06a-secuencia-agregar-carrito.png) · [06b realizar compra 1/2](png/06b-secuencia-realizar-compra.png) (generación del pedido) · [06c realizar compra 2/2](png/06c-secuencia-pagar-pedido.png) (pago simulado) · [06d gestionar productos 1/2](png/06d-secuencia-gestionar-productos.png) (registrar y editar) · [06e gestionar productos 2/2](png/06e-secuencia-eliminar-juguete.png) (eliminar) |
 | 7 | Componentes y artefactos | Implementación | ETF-34 | |
 | 8 | Despliegue (descriptor) | Despliegue | ETF-34 | |
 | 9 | Despliegue (instancia) | Despliegue | ETF-34 | |
@@ -107,7 +107,7 @@ Tres vistas: el modelo de dominio (entidades de TypeORM) y los controllers y ser
 
 ## 6. Secuencia
 
-Cada diagrama de secuencia se hace junto con la historia que implementa su caso de uso, con los mismos nombres de clases y métodos que el código.
+Cada diagrama de secuencia se hace junto con la historia que implementa su caso de uso, con los mismos nombres de clases y métodos que el código. La excepción es CU-12 Gestionar productos (06d y 06e): sus historias (HU-12 y HU-20) son de la release v2.0, así que su diagrama es el diseño que guiará esa implementación, con los nombres de las clases de diseño (04b) y de las interfaces (05b).
 
 ![Secuencia: agregar producto al carrito](png/06a-secuencia-agregar-carrito.png)
 
@@ -126,3 +126,15 @@ Cada diagrama de secuencia se hace junto con la historia que implementa su caso 
 - **CU-09 (2/2) y CU-10 Procesar pago simulado (HU-09).** «Realizar compra» se divide en dos vistas para que cada una se lea completa. En la página de pago, `FormularioPago` valida la tarjeta antes de llamar a `POST /pedidos/{numero}/pago`; `PagosService.pagar` busca el pedido con `PedidosService` (IPedidos) y descuenta el stock con `JuguetesService` (IInventario).
 - **Fragmentos `alt`.** Datos mal escritos o tarjeta vencida: 400 por campo; pedido ya pagado: 409; tarjeta que termina en 0000: 402 «Pago rechazado», se guarda el intento y el cliente puede reintentar.
 - **Una sola transacción.** Pedido Pagado, descuento del stock y pago aprobado se guardan juntos o nada (`opt`: otro pago que llegó antes o un juguete sin stock hacen ROLLBACK). Del pago solo se guardan los últimos 4 dígitos y el resultado.
+
+![Secuencia: gestionar productos, registrar y editar](png/06d-secuencia-gestionar-productos.png)
+
+- **CU-12 Gestionar productos (1/2): registrar y editar (HU-12).** En `/admin/juguetes`, `FormularioJuguete` valida los datos antes de llamar a `POST /juguetes` o `PUT /juguetes/{id}`; la API exige `JwtAuthGuard` y después `RolesGuard` (rol ADMINISTRADOR), y `JuguetesService.registrar` o `editar` guarda el juguete. «Gestionar productos» también se divide en dos vistas.
+- **Fragmentos `loop`, `alt` y `opt`.** El `loop` repite el registro o la edición por cada juguete. Los `alt` cubren a quien no es administrador (la tienda no muestra la administración y la API responde 403), el token vencido (401) y los datos inválidos. Los `opt` cubren el juguete eliminado mientras se editaba (404) y la categoría que ya no existe (400).
+- **Editar no toca el stock.** El stock inicial solo se usa al registrar; después cambia con `actualizarStock` (HU-13), para no pisar las ventas que ocurran mientras el formulario está abierto.
+
+![Secuencia: gestionar productos, eliminar](png/06e-secuencia-eliminar-juguete.png)
+
+- **CU-12 Gestionar productos (2/2): eliminar (HU-20).** Después de confirmar, la tienda llama a `DELETE /juguetes/{id}` y `JuguetesService.desactivar` pone `activo = falso`: no se borra la fila, así que los pedidos anteriores conservan sus datos.
+- **Fragmentos `alt` y `ref`.** Cancelar no llama a la API; un juguete que ya estaba eliminado responde 404. El `ref` reutiliza la verificación de sesión y rol del diagrama 06d.
+- **Efecto en la compra.** El catálogo, el carrito y la compra solo consideran juguetes activos: si el juguete estaba en un carrito, al comprar la API responde 409 «Ajusta tu carrito» y lo marca «Este juguete ya no está a la venta».
