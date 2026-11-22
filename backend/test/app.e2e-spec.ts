@@ -54,6 +54,10 @@ describe('AppController (e2e)', () => {
         categoria: { id: expect.any(Number), nombre: expect.any(String) },
       });
     }
+
+    const nombres = juguetes.map((juguete) => juguete.nombre as string);
+    const ordenEspanol = new Intl.Collator('es', { sensitivity: 'base' });
+    expect(nombres).toEqual([...nombres].sort(ordenEspanol.compare));
   });
 
   afterEach(async () => {

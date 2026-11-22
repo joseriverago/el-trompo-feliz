@@ -41,7 +41,7 @@ describe('JuguetesService', () => {
     servicio = modulo.get(JuguetesService);
   });
 
-  it('consulta solo los juguetes activos, con su categoría y ordenados por nombre', async () => {
+  it('consulta solo los juguetes activos, con su categoría', async () => {
     repositorio.find.mockResolvedValue([]);
 
     await servicio.listarCatalogo();
@@ -49,8 +49,23 @@ describe('JuguetesService', () => {
     expect(repositorio.find).toHaveBeenCalledWith({
       where: { activo: true },
       relations: { categoria: true },
-      order: { nombre: 'ASC' },
     });
+  });
+
+  it('ordena por nombre según el alfabeto español, con las tildes en su lugar', async () => {
+    repositorio.find.mockResolvedValue([
+      juguete({ id: 3, nombre: 'Yoyo luminoso' }),
+      juguete({ id: 8, nombre: 'Ábaco de colores' }),
+      juguete({ id: 12, nombre: 'Ajedrez de madera' }),
+    ]);
+
+    const catalogo = await servicio.listarCatalogo();
+
+    expect(catalogo.map((item) => item.nombre)).toEqual([
+      'Ábaco de colores',
+      'Ajedrez de madera',
+      'Yoyo luminoso',
+    ]);
   });
 
   it('devuelve imagen, nombre, precio, categoría y edad recomendada de cada juguete', async () => {
