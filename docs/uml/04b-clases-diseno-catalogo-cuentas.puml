@@ -52,6 +52,7 @@ class AuthService <<service>> {
 class UsuariosService <<service>> {
   - usuarios: Repository<Usuario>
   + buscarPorCorreo(correo: string): Promise<Usuario | null>
+  + buscarConContrasena(correo: string): Promise<Usuario | null>
   + crearCliente(nombre: string, correo: string, contrasenaHash: string): Promise<Usuario>
 }
 class JwtAuthGuard <<guard>> {
@@ -87,6 +88,7 @@ legend bottom
   • Cada módulo NestJS tiene un controller (rutas HTTP) y un service (reglas del negocio); el service usa el Repository de TypeORM.
   • La contraseña se guarda con bcrypt; el inicio de sesión devuelve un JWT que el frontend envía en la cabecera Authorization.
   • JwtAuthGuard identifica al usuario; RolesGuard deja pasar solo al rol ADMINISTRADOR en las rutas de administración.
-  • listarCatalogo y obtenerDetalle ya están implementados (HU-01, HU-02); el resto de nombres guía las próximas historias.
+  • buscarConContrasena es la única consulta que lee el hash de la contraseña (columna con select: false); solo la usa iniciarSesion.
+  • Ya están implementados listarCatalogo y obtenerDetalle (HU-01, HU-02), registrar (HU-03) e iniciarSesion (HU-04); el resto de nombres guía las próximas historias.
 endlegend
 @enduml

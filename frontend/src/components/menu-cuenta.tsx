@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSesion } from "@/lib/sesion";
 
-/** Parte derecha del encabezado: el nombre del cliente con sesión iniciada o el enlace para crear una cuenta. */
+/** Parte derecha del encabezado: el nombre del cliente con sesión iniciada, o los enlaces para entrar o crear una cuenta. */
 export function MenuCuenta() {
   const sesion = useSesion();
 
@@ -20,11 +20,16 @@ export function MenuCuenta() {
   }
 
   return (
-    <Link
-      href="/registro"
-      className="rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-amber-300 transition-colors hover:bg-zinc-800"
-    >
-      Crear cuenta
-    </Link>
+    <nav aria-label="Cuenta" className="flex items-center gap-4">
+      <Link href="/iniciar-sesion" className="text-sm font-semibold hover:underline">
+        Iniciar sesión
+      </Link>
+      <Link
+        href="/registro"
+        className="rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-amber-300 transition-colors hover:bg-zinc-800"
+      >
+        Crear cuenta
+      </Link>
+    </nav>
   );
 }

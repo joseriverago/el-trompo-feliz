@@ -21,11 +21,24 @@ const oyentes = new Set<() => void>();
 let crudoEnCache: string | null = null;
 let sesionEnCache: Sesion | null = null;
 
+/** El JWT dura 7 días: si ya venció, la sesión guardada no sirve y se trata como si no hubiera. */
+function tokenVigente(token: string): boolean {
+  try {
+    const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const { exp } = JSON.parse(atob(base64)) as { exp?: number };
+    return typeof exp === "number" && exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+}
+
 function interpretar(crudo: string | null): Sesion | null {
   if (!crudo) return null;
   try {
     const valor = JSON.parse(crudo) as Partial<Sesion>;
-    return typeof valor.token === "string" && typeof valor.usuario?.nombre === "string"
+    return typeof valor.token === "string" &&
+      typeof valor.usuario?.nombre === "string" &&
+      tokenVigente(valor.token)
       ? (valor as Sesion)
       : null;
   } catch {

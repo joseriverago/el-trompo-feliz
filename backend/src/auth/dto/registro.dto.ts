@@ -6,16 +6,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-
-/** Recorta los espacios de los extremos. */
-function recortar({ value }: { value: unknown }): unknown {
-  return typeof value === 'string' ? value.trim() : value;
-}
-
-/** El correo se guarda en minúsculas, así «Ana@Correo.pe» y «ana@correo.pe» son la misma cuenta. */
-function normalizarCorreo({ value }: { value: unknown }): unknown {
-  return typeof value === 'string' ? value.trim().toLowerCase() : value;
-}
+import { normalizarCorreo, recortar } from './normalizar.js';
 
 /** Datos del formulario de registro (HU-03, CU-04 Registrarse). */
 export class RegistroDto {

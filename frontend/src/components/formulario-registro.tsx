@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
+import { CampoFormulario } from "@/components/campo-formulario";
 import {
   registrar,
   validarRegistro,
   type DatosRegistro,
   type ErroresRegistro,
 } from "@/lib/auth";
+import { ENLACE } from "@/lib/estilos";
 import { guardarSesion, useSesion } from "@/lib/sesion";
 
 type Campo = keyof DatosRegistro;
@@ -24,8 +26,6 @@ const CAMPOS: { campo: Campo; etiqueta: string; tipo: string; autocompletar: str
     ayuda: "Al menos 8 caracteres.",
   },
 ];
-
-const ENLACE = "font-medium text-amber-700 hover:underline dark:text-amber-400";
 
 /** Formulario de registro de cliente (HU-03). Al crear la cuenta, la sesión queda iniciada. */
 export function FormularioRegistro() {
@@ -95,62 +95,50 @@ export function FormularioRegistro() {
   }
 
   return (
-    <form noValidate onSubmit={enviar} className="mt-8 flex flex-col gap-5">
-      {CAMPOS.map(({ campo, etiqueta, tipo, autocompletar, ayuda }) => {
-        const error = errores[campo];
-        const idMensaje = `${campo}-mensaje`;
-        return (
-          <div key={campo} className="flex flex-col gap-1.5">
-            <label htmlFor={campo} className="text-sm font-medium">
-              {etiqueta}
-            </label>
-            <input
-              id={campo}
-              name={campo}
-              type={tipo}
-              autoComplete={autocompletar}
-              value={valores[campo]}
-              onChange={(evento) => cambiar(campo, evento.target.value)}
-              ref={(elemento) => {
-                entradas.current[campo] = elemento;
-              }}
-              aria-invalid={error ? true : undefined}
-              aria-describedby={error || ayuda ? idMensaje : undefined}
-              className={`h-11 rounded-lg border bg-white px-3 text-zinc-950 outline-none transition-colors focus:ring-2 focus:ring-amber-400 dark:bg-zinc-900 dark:text-zinc-50 ${
-                error ? "border-red-500" : "border-zinc-300 dark:border-zinc-700"
-              }`}
-            />
-            {error ? (
-              <p id={idMensaje} className="text-sm text-red-600 dark:text-red-400">
-                {error}
-              </p>
-            ) : ayuda ? (
-              <p id={idMensaje} className="text-sm text-zinc-500 dark:text-zinc-400">
-                {ayuda}
-              </p>
-            ) : null}
-          </div>
-        );
-      })}
+    <>
+      <form noValidate onSubmit={enviar} className="mt-8 flex flex-col gap-5">
+        {CAMPOS.map(({ campo, etiqueta, tipo, autocompletar, ayuda }) => (
+          <CampoFormulario
+            key={campo}
+            campo={campo}
+            etiqueta={etiqueta}
+            tipo={tipo}
+            autocompletar={autocompletar}
+            ayuda={ayuda}
+            valor={valores[campo]}
+            error={errores[campo]}
+            onCambio={(valor) => cambiar(campo, valor)}
+            ref={(elemento) => {
+              entradas.current[campo] = elemento;
+            }}
+          />
+        ))}
 
-      {errorGeneral && (
-        <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {errorGeneral}
-        </p>
-      )}
+        {errorGeneral && (
+          <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+            {errorGeneral}
+          </p>
+        )}
 
-      <button
-        type="submit"
-        disabled={enviando}
-        className="h-11 rounded-full bg-amber-500 px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-amber-400 disabled:cursor-wait disabled:opacity-70"
-      >
-        {enviando ? "Creando tu cuenta…" : "Crear cuenta"}
-      </button>
-      {enviando && (
-        <p role="status" className="text-center text-sm text-zinc-500 dark:text-zinc-400">
-          Si la tienda estuvo inactiva, puede tardar hasta un minuto.
-        </p>
-      )}
-    </form>
+        <button
+          type="submit"
+          disabled={enviando}
+          className="h-11 rounded-full bg-amber-500 px-5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-amber-400 disabled:cursor-wait disabled:opacity-70"
+        >
+          {enviando ? "Creando tu cuenta…" : "Crear cuenta"}
+        </button>
+        {enviando && (
+          <p role="status" className="text-center text-sm text-zinc-500 dark:text-zinc-400">
+            Si la tienda estuvo inactiva, puede tardar hasta un minuto.
+          </p>
+        )}
+      </form>
+      <p className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
+        ¿Ya tienes una cuenta?{" "}
+        <Link href="/iniciar-sesion" className={ENLACE}>
+          Inicia sesión
+        </Link>
+      </p>
+    </>
   );
 }
