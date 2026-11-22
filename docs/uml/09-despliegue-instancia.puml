@@ -1,0 +1,125 @@
+@startuml 09-despliegue-instancia
+!include estilo.iuml
+skinparam nodesep 45
+skinparam ranksep 80
+skinparam node {
+  BackgroundColor #FEF3C7
+  BorderColor #B45309
+  FontColor #27272A
+  StereotypeFontColor #92400E
+  StereotypeFontSize 11
+}
+skinparam artifact {
+  BackgroundColor #FFFFFF
+  BorderColor #92400E
+  FontSize 11
+  StereotypeFontColor #92400E
+}
+left to right direction
+
+title Despliegue (instancia) · producción de El Trompo Feliz en Vercel, Render y Neon
+
+' ---------- Cliente ----------
+node "<u>pcCliente : PC o smartphone del cliente</u>" <<device>> as Cliente {
+  node "<u>: Navegador web</u>" <<execution environment>> as Nav {
+    artifact "<u>bundles JS y CSS</u>\n<size:10>descargados de .next/static</size>" as JsNav <<executable>>
+    artifact "<u>trompo-feliz.sesion</u>\n<size:10>localStorage: token JWT (vence a los 7 días)</size>" as SesNav <<file>>
+  }
+}
+
+' ---------- Vercel (frontend) ----------
+node "<u>gru1 : Red de borde de Vercel (CDN)</u>\n<size:10>São Paulo · atiende las visitas desde Perú</size>" <<device>> as BordeVercel {
+  node "<u>: Vercel Edge Network</u>" <<execution environment>> as Edge {
+    artifact "<u>páginas prerenderizadas</u>\n<size:10>/, /carrito, /registro,</size>\n<size:10>/iniciar-sesion, /comprar</size>" as Html <<file>>
+    artifact "<u>.next/static</u>\n<size:10>bundles JS y CSS</size>" as Static <<file>>
+  }
+}
+
+node "<u>iad1 : Servidor web (Vercel)</u>\n<size:10>Washington D. C. (EE. UU. este)</size>" <<device>> as SrvVercel {
+  node "<u>: Vercel Functions (Node.js 24)</u>" <<execution environment>> as Fn {
+    artifact "<u>.next/server</u>\n<size:10>/juguetes/[id] y /pedidos/[numero]/pago</size>" as NextServer <<executable>>
+    artifact SpecVercel <<deployment spec>> [
+      <b><u>: proyecto Vercel</u></b>
+      ----
+      rootDirectory = frontend
+      framework = nextjs
+      nodeVersion = 24.x
+      dominio = el-trompo-feliz-jrivera.vercel.app
+      NEXT_PUBLIC_API_URL = https://el-trompo-feliz-api.onrender.com
+    ]
+  }
+}
+
+' ---------- Render (backend) ----------
+node "<u>cloudflare : Red de borde de Render</u>" <<device>> as BordeRender {
+  node "<u>: Cloudflare (proxy TLS)</u>" <<execution environment>> as Cloudflare
+}
+
+node "<u>el-trompo-feliz-api : Servidor de aplicaciones (Render)</u>\n<size:10>el-trompo-feliz-api.onrender.com</size>" <<device>> as SrvRender {
+  node "<u>: Web Service (Node.js 24)</u>" <<execution environment>> as NodeRender {
+    artifact "<u>dist/main.js</u>\n<size:10>AppModule · escucha en el PORT de Render</size>" as Main <<executable>>
+    artifact "<u>dist/auth/ · dist/usuarios/</u>" as LibUsuarios <<library>>
+    artifact "<u>dist/juguetes/ · dist/categorias/</u>" as LibCatalogo <<library>>
+    artifact "<u>dist/carrito/</u>" as LibCarrito <<library>>
+    artifact "<u>dist/pedidos/</u>" as LibPedidos <<library>>
+    artifact "<u>dist/pagos/</u>" as LibPagos <<library>>
+    artifact SpecRender <<deployment spec>> [
+      <b><u>: servicio Render</u></b>
+      ----
+      rootDirectory = backend
+      buildCommand = npm ci && npm run build
+      startCommand = npm run start:prod
+      healthCheckPath = /
+      plan = Free
+      region = Virginia (US East)
+      variables = DATABASE_URL, FRONTEND_URL, JWT_SECRET
+    ]
+  }
+}
+
+' ---------- Neon (base de datos) ----------
+node "<u>trompo-feliz : Servidor de BD (Neon)</u>\n<size:10>AWS us-east-1 (N. Virginia)</size>" <<device>> as SrvNeon {
+  node "<u>: Pooler de conexiones (PgBouncer)</u>" <<execution environment>> as Pooler
+  node "<u>: PostgreSQL 18.7</u>" <<execution environment>> as PG {
+    artifact "<u>trompo_feliz</u>\n<size:10>8 tablas: categorias, juguetes, usuarios,</size>\n<size:10>carritos, items_carrito, pedidos,</size>\n<size:10>detalles_pedido, pagos</size>" as Esquema <<schema>>
+  }
+}
+
+' ---------- Código fuente y preparación de la BD ----------
+node "<u>github.com : GitHub</u>" <<servicio externo>> as GH {
+  artifact "<u>joseriverago/el-trompo-feliz</u>\n<size:10>rama main</size>" as Repo <<source>>
+}
+
+node "<u>pcEquipo : PC del equipo (desarrollo)</u>" <<device>> as PCDev {
+  node "<u>: Node.js 24</u>" <<execution environment>> as NodeDev {
+    artifact "<u>dist/database/semilla/</u>\n<u>preparar-base-de-datos.js</u>\n<size:10>npm run db:preparar</size>" as Semilla <<script>>
+  }
+}
+
+SpecVercel ..> NextServer
+SpecRender ..> Main
+Main ..> LibPagos
+Main ..> LibPedidos
+Main ..> LibCarrito
+Main ..> LibCatalogo
+Main ..> LibUsuarios
+Pooler -- PG
+
+Cliente -- BordeVercel : <<HTTPS>>\nel-trompo-feliz-jrivera.vercel.app
+Cliente -- BordeRender : <<HTTPS + JSON>>\nel-trompo-feliz-api.onrender.com\nAuthorization: Bearer JWT
+BordeVercel -- SrvVercel : <<HTTPS>>\n(solo rutas dinámicas)
+BordeRender -- SrvRender : <<HTTPS>>
+SrvRender -- Pooler : <<SQL sobre TLS>>\npg · sslmode=verify-full
+SrvVercel -- GH : <<HTTPS · webhook>>\npush a main y PR
+SrvRender -- GH : <<HTTPS · webhook>>\npush a main
+GH -- PCDev : <<HTTPS>>\ngit push
+Pooler -- PCDev : <<SQL sobre TLS>>\ndb:preparar
+
+legend bottom
+  • Instancia real de producción (noviembre de 2026): los nodos de la nube llevan el nombre o la región que muestran los paneles de Vercel, Render y Neon, y las cabeceras de respuesta (x-vercel-id gru1::iad1, server: cloudflare).
+  • Las páginas prerenderizadas salen de gru1 (x-vercel-cache: HIT o PRERENDER); las rutas dinámicas se ejecutan en iad1, cerca de Render (Virginia) y de Neon (us-east-1).
+  • El plan Free de Render suspende la API tras 15 minutos sin tráfico: la primera petición después de una pausa tarda unos segundos mientras el servicio arranca.
+  • Las variables DATABASE_URL, FRONTEND_URL y JWT_SECRET solo tienen valor en el panel de Render; el repositorio guarda únicamente sus nombres en backend/.env.example.
+  • NEXT_PUBLIC_API_URL es pública a propósito: Next.js la incrusta en los bundles al compilar, y el navegador la usa para llamar a la API.
+endlegend
+@enduml

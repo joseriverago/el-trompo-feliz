@@ -1,0 +1,128 @@
+@startuml 08-despliegue-descriptor
+!include estilo.iuml
+skinparam nodesep 45
+skinparam ranksep 80
+skinparam node {
+  BackgroundColor #FFFBEB
+  BorderColor #B45309
+  FontColor #27272A
+  StereotypeFontColor #92400E
+  StereotypeFontSize 11
+}
+skinparam artifact {
+  BackgroundColor #FFFFFF
+  BorderColor #92400E
+  FontSize 11
+  StereotypeFontColor #92400E
+}
+left to right direction
+
+title Despliegue (descriptor) · nodos, entornos de ejecución, artefactos y protocolos de El Trompo Feliz
+
+' ---------- Cliente ----------
+node "PC o smartphone del cliente" <<device>> as Cliente {
+  node "Navegador web" <<execution environment>> as Nav {
+    artifact "bundles JS y CSS\n<size:10>copia de .next/static</size>" as JsNav <<executable>>
+    artifact "trompo-feliz.sesion\n<size:10>localStorage: token JWT</size>" as SesNav <<file>>
+  }
+}
+
+' ---------- Vercel (frontend) ----------
+node "Red de borde de Vercel (CDN)" <<device>> as BordeVercel {
+  node "Vercel Edge Network" <<execution environment>> as Edge {
+    artifact "páginas prerenderizadas\n<size:10>/, /carrito, /registro,</size>\n<size:10>/iniciar-sesion, /comprar</size>" as Html <<file>>
+    artifact "bundles JS y CSS\n<size:10>.next/static</size>" as Static <<file>>
+  }
+}
+
+node "Servidor web (Vercel)" <<device>> as SrvVercel {
+  node "Vercel Functions (Node.js 24)" <<execution environment>> as Fn {
+    artifact ".next/server\n<size:10>rutas dinámicas /juguetes/[id]</size>\n<size:10>y /pedidos/[numero]/pago</size>" as NextServer <<executable>>
+    artifact SpecVercel <<deployment spec>> [
+      <b>proyecto Vercel</b>
+      ----
+      rootDirectory : String
+      framework : String
+      nodeVersion : String
+      dominio : String
+      NEXT_PUBLIC_API_URL : URL
+    ]
+  }
+}
+
+' ---------- Render (backend) ----------
+node "Red de borde de Render" <<device>> as BordeRender {
+  node "Cloudflare (proxy TLS)" <<execution environment>> as Cloudflare
+}
+
+node "Servidor de aplicaciones (Render)" <<device>> as SrvRender {
+  node "Web Service (Node.js 24)" <<execution environment>> as NodeRender {
+    artifact "dist/main.js\n<size:10>AppModule · npm run start:prod</size>" as Main <<executable>>
+    artifact "dist/auth/ · dist/usuarios/" as LibUsuarios <<library>>
+    artifact "dist/juguetes/ · dist/categorias/" as LibCatalogo <<library>>
+    artifact "dist/carrito/" as LibCarrito <<library>>
+    artifact "dist/pedidos/" as LibPedidos <<library>>
+    artifact "dist/pagos/" as LibPagos <<library>>
+    artifact SpecRender <<deployment spec>> [
+      <b>servicio Render</b>
+      ----
+      rootDirectory : String
+      buildCommand : String
+      startCommand : String
+      healthCheckPath : String
+      plan : String
+      region : String
+      variables : DATABASE_URL, FRONTEND_URL, JWT_SECRET
+    ]
+  }
+}
+
+' ---------- Neon (base de datos) ----------
+node "Servidor de BD (Neon)" <<device>> as SrvNeon {
+  node "Pooler de conexiones (PgBouncer)" <<execution environment>> as Pooler
+  node "PostgreSQL 18" <<execution environment>> as PG {
+    artifact "trompo_feliz\n<size:10>8 tablas: categorias, juguetes, usuarios,</size>\n<size:10>carritos, items_carrito, pedidos,</size>\n<size:10>detalles_pedido, pagos</size>" as Esquema <<schema>>
+  }
+}
+
+' ---------- Código fuente y preparación de la BD ----------
+node "GitHub" <<servicio externo>> as GH {
+  artifact "repositorio el-trompo-feliz\n<size:10>rama main</size>" as Repo <<source>>
+}
+
+node "PC del equipo (desarrollo)" <<device>> as PCDev {
+  node "Node.js 24" <<execution environment>> as NodeDev {
+    artifact "preparar-base-de-datos.js\n<size:10>npm run db:preparar</size>" as Semilla <<script>>
+  }
+}
+
+SpecVercel ..> NextServer
+SpecRender ..> Main
+' main.js carga los módulos compilados a través de app.module.js.
+Main ..> LibPagos
+Main ..> LibPedidos
+Main ..> LibCarrito
+Main ..> LibCatalogo
+Main ..> LibUsuarios
+Pooler -- PG
+
+' Rutas de comunicación, de izquierda a derecha: cliente, borde, servidores, GitHub y Neon, PC del equipo.
+Cliente -- BordeVercel : <<HTTPS>>
+Cliente -- BordeRender : <<HTTPS + JSON>>\nJWT · CORS
+BordeVercel -- SrvVercel : <<HTTPS>>\n(solo rutas dinámicas)
+BordeRender -- SrvRender : <<HTTPS>>
+SrvRender -- Pooler : <<SQL sobre TLS>>\npg · TypeORM
+SrvVercel -- GH : <<HTTPS · webhook>>\ndespliegue automático
+SrvRender -- GH : <<HTTPS · webhook>>\ndespliegue automático
+GH -- PCDev : <<HTTPS>>\ngit push
+Pooler -- PCDev : <<SQL sobre TLS>>\ndb:preparar
+
+legend bottom
+  • El navegador descarga la tienda desde Vercel y llama directamente a la API de Render por HTTPS con JSON: Vercel nunca llama a Render, y solo Render toca la base de datos.
+  • Las páginas sin datos variables se prerenderizan al compilar y salen de la red de borde; /juguetes/[id] y /pedidos/[numero]/pago se generan en Vercel Functions en cada visita.
+  • El token JWT se guarda en localStorage y viaja en la cabecera Authorization; la API solo acepta los orígenes de FRONTEND_URL (CORS).
+  • Cada cambio integrado en main despliega solo: Vercel ejecuta next build y Render npm ci && npm run build; cada PR recibe además una vista previa de Vercel.
+  • La API usa synchronize: false: el esquema y la semilla se crean desde la PC del equipo con npm run db:preparar. Las conexiones a Neon usan TLS (sslmode=verify-full).
+  • Los «deployment spec» muestran los atributos de configuración; sus valores están en el diagrama de instancia (09). Los secretos solo se guardan en los paneles de Vercel y Render.
+endlegend
+@enduml

@@ -1,0 +1,71 @@
+@startuml 07b-artefactos
+!include estilo.iuml
+skinparam componentStyle uml2
+skinparam nodesep 40
+skinparam ranksep 70
+skinparam artifact {
+  BackgroundColor #FFFFFF
+  BorderColor #92400E
+  FontSize 12
+}
+
+title Implementación (2/2) · Artefactos del repositorio y los componentes que manifiestan
+
+package "Repositorio joseriverago/el-trompo-feliz (rama main)" as Repo {
+  package "frontend/" as CF {
+    artifact "src/\n<size:10>app/, components/, lib/</size>" as FSrc <<source>>
+    artifact "package.json\n<size:10>next 16.4.6 · react 19 · Node 24.x</size>" as FPkg <<file>>
+    artifact ".env.example\n<size:10>NEXT_PUBLIC_API_URL</size>" as FEnv <<file>>
+    artifact ".next/ (next build)\n<size:10>páginas prerenderizadas, bundles JS</size>\n<size:10>y funciones de las rutas dinámicas</size>" as FBuild <<executable>>
+  }
+  package "backend/" as CB {
+    artifact "src/\n<size:10>auth/, usuarios/, juguetes/, categorias/,</size>\n<size:10>carrito/, pedidos/, pagos/, config/, database/</size>" as BSrc <<source>>
+    artifact "package.json · nest-cli.json\n<size:10>scripts build, start:prod, db:preparar · Node 24.x</size>" as BPkg <<file>>
+    artifact ".env.example\n<size:10>DATABASE_URL, PORT, FRONTEND_URL,</size>\n<size:10>JWT_SECRET y SEED_* (semilla)</size>" as BEnv <<file>>
+    package "dist/ (nest build)" as Dist {
+      artifact "main.js · app.module.js\n<size:10>config/*.js · database/*.js</size>" as BMain <<executable>>
+      artifact "auth/*.js\nusuarios/*.js" as BUsuarios <<library>>
+      artifact "juguetes/*.js\ncategorias/*.js" as BCatalogo <<library>>
+      artifact "carrito/*.js" as BCarrito <<library>>
+      artifact "pedidos/*.js" as BPedidos <<library>>
+      artifact "pagos/*.js" as BPagos <<library>>
+      artifact "database/semilla/\npreparar-base-de-datos.js\n<size:10>npm run db:preparar</size>" as BSemilla <<script>>
+    }
+  }
+  package "docs/" as CD {
+    artifact "uml/ · scrum/ · evidencias/" as Docs <<document>>
+  }
+}
+
+' Componentes del diagrama 07a.
+component "Frontend web" as Frontend <<subsystem>>
+component "Arranque y configuración\n<size:10>AppModule</size>" as Arranque
+component "Usuarios y autenticación" as Usuarios <<subsystem>>
+component "Catálogo" as Catalogo <<subsystem>>
+component "Carrito" as Carrito <<subsystem>>
+component "Pedidos" as Pedidos <<subsystem>>
+component "Pagos" as Pagos <<subsystem>>
+
+FBuild .up.> FSrc : <<derive>>\nnext build
+BMain .up.> BSrc : <<derive>>\nnest build
+FSrc -[hidden]right- FPkg
+FPkg -[hidden]right- FEnv
+BSrc -[hidden]right- BPkg
+BPkg -[hidden]right- BEnv
+
+FBuild ..> Frontend : <<manifest>>
+BMain ..> Arranque : <<manifest>>
+BUsuarios ..> Usuarios : <<manifest>>
+BCatalogo ..> Catalogo : <<manifest>>
+BCarrito ..> Carrito : <<manifest>>
+BPedidos ..> Pedidos : <<manifest>>
+BPagos ..> Pagos : <<manifest>>
+
+legend bottom
+  • Los artefactos son archivos reales del repositorio (src/, package.json, .env.example) o los que genera la compilación (.next/, dist/); .next/ y dist/ no se suben a Git:
+     Vercel y Render los generan desde src/ en cada cambio integrado en main. Todo dist/ se deriva de src/, aunque la flecha «derive» se dibuja una sola vez.
+  • «manifest» (artefacto → componente del diagrama 07a): cada carpeta compilada de dist/ contiene el código de un módulo NestJS (mismo nombre de carpeta que en src/), y .next/ contiene la tienda completa.
+  • preparar-base-de-datos.js (npm run db:preparar) se ejecuta desde la PC del equipo: crea o actualiza las 8 tablas en Neon y carga la semilla, porque la API usa synchronize: false.
+  • package.json fija Node 24.x (engines) y los comandos que usan Vercel y Render; .env.example lista las variables sin valores: los secretos solo están en los paneles.
+endlegend
+@enduml

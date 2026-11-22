@@ -1,0 +1,95 @@
+@startuml 07a-componentes
+!include estilo.iuml
+skinparam componentStyle uml2
+skinparam nodesep 45
+skinparam ranksep 65
+skinparam database {
+  BackgroundColor #FFFBEB
+  BorderColor #B45309
+}
+
+title Implementación (1/2) · Componentes del repositorio y sus dependencias
+
+package "Frontend web · frontend/src (Next.js 16 · React 19 · TypeScript)" as PF {
+  component "Páginas\n<size:10>app/: /, /juguetes/[id], /registro, /iniciar-sesion,</size>\n<size:10>/carrito, /comprar, /pedidos/[numero]/pago</size>" as Paginas
+  component "Componentes de interfaz\n<size:10>components/: Catalogo, VistaCarrito,</size>\n<size:10>FormularioEntrega, FormularioPago…</size>" as Interfaz
+  component "Clientes de la API\n<size:10>lib/: juguetes, auth, carrito,</size>\n<size:10>pedidos, pagos, sesion</size>" as Clientes
+}
+
+package "Backend API · backend/src (NestJS 12 · TypeORM · TypeScript)" as PB {
+  () "IAutenticacion" as IAutenticacion
+  () "ICatalogo" as ICatalogo
+  () "ICarrito" as ICarrito
+  () "IPedidos" as IPedidos
+  () "IPagos" as IPagos
+
+  component "Usuarios y autenticación\n<size:10>auth/, usuarios/</size>\n<size:10>AuthModule, UsuariosModule</size>" as Usuarios <<subsystem>>
+  component "Catálogo\n<size:10>juguetes/, categorias/</size>\n<size:10>JuguetesModule</size>" as Catalogo <<subsystem>>
+  component "Carrito\n<size:10>carrito/</size>\n<size:10>CarritoModule</size>" as Carrito <<subsystem>>
+  component "Pedidos\n<size:10>pedidos/</size>\n<size:10>PedidosModule</size>" as Pedidos <<subsystem>>
+  component "Pagos\n<size:10>pagos/</size>\n<size:10>PagosModule</size>" as Pagos <<subsystem>>
+
+  () "ISesion" as ISesion
+  () "IInventario" as IInventario
+
+  component "Arranque y configuración\n<size:10>main.ts, app.module.ts (AppModule),</size>\n<size:10>config/, database/, comun/</size>" as Arranque
+}
+
+database "PostgreSQL 18\n(Neon)" as BD
+
+package "Dependencias npm · frontend/package.json" as NpmF {
+  component "next · react\nreact-dom" as LibNext <<library>>
+}
+
+package "Dependencias npm · backend/package.json" as NpmB {
+  component "@nestjs/core\n@nestjs/platform-express" as LibNest <<library>>
+  component "class-validator\nclass-transformer" as LibValidacion <<library>>
+  component "@nestjs/typeorm\ntypeorm · pg" as LibOrm <<library>>
+  component "@nestjs/jwt\nbcryptjs" as LibJwt <<library>>
+}
+
+' Frontend: las páginas usan los componentes, y estos llaman a la API con los clientes de lib/.
+Paginas ..> Interfaz
+Interfaz ..> Clientes
+Clientes ..> IAutenticacion
+Clientes ..> ICatalogo
+Clientes ..> ICarrito
+Clientes ..> IPedidos
+Clientes ..> IPagos
+
+' Interfaces que proporciona cada módulo (lo que exporta su *.module.ts).
+IAutenticacion -- Usuarios
+ICatalogo -- Catalogo
+ICarrito -- Carrito
+IPedidos -- Pedidos
+IPagos -- Pagos
+Usuarios -- ISesion
+Catalogo -- IInventario
+
+' Interfaces que requiere cada módulo (lo que importa su *.module.ts).
+Carrito ..> ISesion
+Carrito ..> IInventario
+Pedidos ..> ISesion
+Pedidos ..> IInventario
+Pedidos ..> ICarrito
+Pagos ..> ISesion
+Pagos ..> IInventario
+Pagos ..> IPedidos
+
+Arranque ..> BD : SQL sobre TLS
+Paginas ..> LibNext
+Arranque ..> LibNest
+Arranque ..> LibValidacion
+Arranque ..> LibOrm
+Usuarios ..> LibJwt
+
+legend bottom
+  ○ interfaz proporcionada (línea continua) · flecha punteada = dependencia (el componente requiere esa interfaz o librería)
+  • Cada componente es una carpeta real del repositorio. Los cinco subsistemas del backend (05a) son módulos NestJS, y AppModule los importa a todos.
+  • Las dependencias entre módulos pasan por interfaces, tal como importan sus *.module.ts: ISesion es AuthService con JwtAuthGuard (AuthModule),
+     IInventario es JuguetesService, ICarrito es CarritoService e IPedidos es PedidosService.
+  • La tienda llama a la API desde el navegador por HTTPS con JSON (lib/), con el JWT guardado en localStorage; nunca toca la base de datos.
+  • Arranque y configuración abre la conexión con PostgreSQL (TypeORM + pg, con TLS), activa CORS y el pipe de validación de los DTO.
+  • IAdminCatalogo e IAdminPedidos (05a) todavía no tienen código: llegan con la administración (release v2.0).
+endlegend
+@enduml
