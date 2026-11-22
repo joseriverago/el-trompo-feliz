@@ -47,7 +47,6 @@ class Juguete <<entity>> {
 }
 class Carrito <<entity>> {
   - id: number
-  - actualizadoEn: Date
   + calcularTotal(): number
   + buscarItem(jugueteId: number): ItemCarrito | undefined
 }
@@ -102,6 +101,7 @@ Pago "0..*" --> "1" Pedido : pedido
 legend bottom
   • Cliente y Administrador del análisis se diseñan como un solo Usuario con el atributo rol: comparten registro e inicio de sesión.
   • DatosEntrega es un objeto embebido: sus columnas viven en la tabla pedidos.
+  • ItemCarrito no copia el precio: el carrito siempre muestra el precio actual. Un juguete aparece una sola vez por carrito (UNIQUE).
   • DetallePedido copia nombre y precio del juguete al generar el pedido; Juguete.activo = falso lo saca del catálogo sin borrarlo.
   • avanzarA() solo permite Pendiente → Pagado → Enviado → Entregado; Pago guarda cada intento, solo los últimos 4 dígitos.
 endlegend

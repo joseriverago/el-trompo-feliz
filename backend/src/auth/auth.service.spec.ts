@@ -9,6 +9,7 @@ import {
   AuthService,
   CORREO_REGISTRADO,
   CREDENCIALES_INCORRECTAS,
+  SESION_REQUERIDA,
 } from './auth.service.js';
 import type { RegistroDto } from './dto/registro.dto.js';
 
@@ -81,7 +82,11 @@ describe('AuthService.registrar', () => {
       exp: number;
       iat: number;
     }>(sesion.token);
-    expect(contenido).toMatchObject({ sub: 7, nombre: 'Begoña Ñahui Ávila', rol: Rol.CLIENTE });
+    expect(contenido).toMatchObject({
+      sub: 7,
+      nombre: 'Begoña Ñahui Ávila',
+      rol: Rol.CLIENTE,
+    });
   });
 
   it('responde 409 «Este correo ya está registrado» y no crea otra cuenta', async () => {
@@ -96,7 +101,9 @@ describe('AuthService.registrar', () => {
 
   it('responde 409 si otro registro con el mismo correo se guardó un instante antes', async () => {
     usuariosService.crearCliente.mockRejectedValue(
-      Object.assign(new Error('duplicate key'), { driverError: { code: '23505' } }),
+      Object.assign(new Error('duplicate key'), {
+        driverError: { code: '23505' },
+      }),
     );
 
     await expect(servicio.registrar(datos)).rejects.toThrow(CORREO_REGISTRADO);
@@ -164,9 +171,9 @@ describe('AuthService.iniciarSesion', () => {
       rol: Rol.CLIENTE,
     });
     expect(JSON.stringify(sesion)).not.toContain('$2');
-    const contenido = new JwtService({ secret: SECRETO }).verify<{ sub: number }>(
-      sesion.token,
-    );
+    const contenido = new JwtService({ secret: SECRETO }).verify<{
+      sub: number;
+    }>(sesion.token);
     expect(contenido.sub).toBe(7);
   });
 
@@ -185,7 +192,10 @@ describe('AuthService.iniciarSesion', () => {
 
   it('si el correo no tiene cuenta responde exactamente lo mismo que con una contraseña incorrecta', async () => {
     const sinCuenta = await rechazo('nadie@correo.pe', CONTRASENA);
-    const contrasenaIncorrecta = await rechazo(cliente.correo, 'otra-contrasena');
+    const contrasenaIncorrecta = await rechazo(
+      cliente.correo,
+      'otra-contrasena',
+    );
 
     expect(sinCuenta).toBeInstanceOf(UnauthorizedException);
     expect(sinCuenta.getResponse()).toEqual(contrasenaIncorrecta.getResponse());
@@ -193,5 +203,36 @@ describe('AuthService.iniciarSesion', () => {
       statusCode: 401,
       message: CREDENCIALES_INCORRECTAS,
     });
+  });
+});
+
+describe('AuthService.verificarToken', () => {
+  const jwt = new JwtService({ secret: SECRETO });
+  const servicio = new AuthService({} as UsuariosService, jwt);
+
+  it('devuelve el id, el nombre y el rol que guarda el token', () => {
+    const token = jwt.sign({
+      sub: 7,
+      nombre: 'Begoña Ñahui Ávila',
+      rol: Rol.CLIENTE,
+    });
+
+    expect(servicio.verificarToken(token)).toEqual({
+      id: 7,
+      nombre: 'Begoña Ñahui Ávila',
+      rol: Rol.CLIENTE,
+    });
+  });
+
+  it('responde 401 «Inicia sesión para continuar» si el token fue alterado', () => {
+    const token = jwt.sign({ sub: 7, nombre: 'Begoña', rol: Rol.CLIENTE });
+    const [cabecera, , firma] = token.split('.');
+    const otroContenido = Buffer.from(
+      JSON.stringify({ sub: 1, nombre: 'Begoña', rol: Rol.ADMINISTRADOR }),
+    ).toString('base64url');
+
+    expect(() =>
+      servicio.verificarToken(`${cabecera}.${otroContenido}.${firma}`),
+    ).toThrow(SESION_REQUERIDA);
   });
 });

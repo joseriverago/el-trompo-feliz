@@ -8,5 +8,7 @@ import { JuguetesService } from './juguetes.service.js';
   imports: [TypeOrmModule.forFeature([Juguete])],
   controllers: [JuguetesController],
   providers: [JuguetesService],
+  // El carrito y la compra usan JuguetesService como IInventario (verificar y descontar stock).
+  exports: [JuguetesService],
 })
 export class JuguetesModule {}

@@ -137,7 +137,7 @@ export function DetalleJuguete({ id }: { id: string }) {
               Agotado: por ahora no hay unidades de este juguete.
             </p>
           ) : (
-            <BotonAgregarCarrito className="w-full sm:w-auto sm:self-start" />
+            <BotonAgregarCarrito jugueteId={juguete.id} className="w-full sm:w-72 sm:self-start" />
           )}
           <div>
             <h2 className="text-lg font-semibold">Descripción</h2>

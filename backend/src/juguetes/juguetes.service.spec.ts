@@ -1,9 +1,9 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Categoria } from '../categorias/entities/categoria.entity.js';
 import { Juguete } from './entities/juguete.entity.js';
-import { JuguetesService } from './juguetes.service.js';
+import { JuguetesService, mensajeSinStock } from './juguetes.service.js';
 
 const peluches = { id: 2, nombre: 'Peluches' } as Categoria;
 
@@ -28,11 +28,12 @@ function juguete(datos: Partial<Juguete>): Juguete {
 
 describe('JuguetesService', () => {
   let servicio: JuguetesService;
-  const repositorio = { find: vi.fn(), findOne: vi.fn() };
+  const repositorio = { find: vi.fn(), findOne: vi.fn(), findOneBy: vi.fn() };
 
   beforeEach(async () => {
     repositorio.find.mockReset();
     repositorio.findOne.mockReset();
+    repositorio.findOneBy.mockReset();
     const modulo: TestingModule = await Test.createTestingModule({
       providers: [
         JuguetesService,
@@ -157,6 +158,50 @@ describe('JuguetesService', () => {
         servicio.obtenerDetalle(99_999_999_999),
       ).rejects.toBeInstanceOf(NotFoundException);
       expect(repositorio.findOne).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('verificarStock', () => {
+    it('devuelve el juguete activo si hay unidades suficientes', async () => {
+      const osito = juguete({ stock: 3 });
+      repositorio.findOneBy.mockResolvedValue(osito);
+
+      await expect(servicio.verificarStock(1, 3)).resolves.toBe(osito);
+      expect(repositorio.findOneBy).toHaveBeenCalledWith({
+        id: 1,
+        activo: true,
+      });
+    });
+
+    it('responde 409 «Solo quedan N unidades» si se piden más unidades que el stock', async () => {
+      repositorio.findOneBy.mockResolvedValue(juguete({ stock: 3 }));
+
+      const intento = servicio.verificarStock(1, 4);
+
+      await expect(intento).rejects.toBeInstanceOf(ConflictException);
+      await expect(intento).rejects.toMatchObject({
+        response: {
+          statusCode: 409,
+          message: 'Solo quedan 3 unidades',
+          stock: 3,
+        },
+      });
+    });
+
+    it('responde 404 si el juguete no existe o está desactivado', async () => {
+      repositorio.findOneBy.mockResolvedValue(null);
+
+      await expect(servicio.verificarStock(999, 1)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('mensajeSinStock', () => {
+    it('usa singular, plural y «agotado» según las unidades', () => {
+      expect(mensajeSinStock(5)).toBe('Solo quedan 5 unidades');
+      expect(mensajeSinStock(1)).toBe('Solo queda 1 unidad');
+      expect(mensajeSinStock(0)).toBe('Este juguete está agotado');
     });
   });
 });

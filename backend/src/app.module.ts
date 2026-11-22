@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
+import { CarritoModule } from './carrito/carrito.module.js';
 import { opcionesBaseDeDatos } from './database/opciones-base-de-datos.js';
 import { JuguetesModule } from './juguetes/juguetes.module.js';
 
@@ -12,6 +13,7 @@ import { JuguetesModule } from './juguetes/juguetes.module.js';
     TypeOrmModule.forRootAsync({ useFactory: () => opcionesBaseDeDatos() }),
     JuguetesModule,
     AuthModule,
+    CarritoModule,
   ],
   controllers: [AppController],
   providers: [AppService],

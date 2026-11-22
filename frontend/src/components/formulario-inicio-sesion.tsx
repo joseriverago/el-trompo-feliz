@@ -20,8 +20,11 @@ const CAMPOS: { campo: Campo; etiqueta: string; tipo: string; autocompletar: str
   { campo: "contrasena", etiqueta: "Contraseña", tipo: "password", autocompletar: "current-password" },
 ];
 
-/** Formulario de inicio de sesión (HU-04). */
-export function FormularioInicioSesion() {
+/**
+ * Formulario de inicio de sesión (HU-04). Al entrar lleva a `destino`: la página desde la que
+ * se pidió iniciar sesión (por ejemplo, el juguete que se quería agregar al carrito) o el catálogo.
+ */
+export function FormularioInicioSesion({ destino }: { destino: string }) {
   const router = useRouter();
   const sesion = useSesion();
   const [valores, setValores] = useState<DatosInicioSesion>({ correo: "", contrasena: "" });
@@ -54,7 +57,7 @@ export function FormularioInicioSesion() {
       if (resultado.ok) {
         setIniciada(true);
         guardarSesion(resultado.sesion);
-        router.push("/");
+        router.push(destino);
         return;
       }
       if (resultado.mensaje) {
@@ -75,7 +78,7 @@ export function FormularioInicioSesion() {
   if (iniciada) {
     return (
       <p role="status" className="mt-8 text-zinc-700 dark:text-zinc-300">
-        ¡Sesión iniciada! Te llevamos al catálogo…
+        ¡Sesión iniciada! {destino === "/" ? "Te llevamos al catálogo…" : "Te llevamos de vuelta…"}
       </p>
     );
   }

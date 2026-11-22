@@ -44,7 +44,7 @@ export function TarjetaJuguete({ juguete }: { juguete: JugueteCatalogo }) {
             </p>
           ) : (
             // relative z-10: el botón queda por encima del enlace que cubre la tarjeta.
-            <BotonAgregarCarrito className="relative z-10 w-full" />
+            <BotonAgregarCarrito jugueteId={juguete.id} className="relative z-10 w-full" />
           )}
         </div>
       </div>

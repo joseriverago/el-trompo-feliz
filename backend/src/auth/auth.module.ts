@@ -4,6 +4,7 @@ import { secretoJwt } from '../config/secreto-jwt.js';
 import { UsuariosModule } from '../usuarios/usuarios.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
+import { JwtAuthGuard } from './jwt-auth.guard.js';
 
 @Module({
   imports: [
@@ -17,6 +18,8 @@ import { AuthService } from './auth.service.js';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, JwtAuthGuard],
+  // Los demás módulos protegen sus rutas con JwtAuthGuard, que usa AuthService (ISesion).
+  exports: [AuthService, JwtAuthGuard],
 })
 export class AuthModule {}

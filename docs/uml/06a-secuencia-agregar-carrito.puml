@@ -1,0 +1,109 @@
+@startuml 06a-secuencia-agregar-carrito
+!include estilo.iuml
+skinparam maxMessageSize 220
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam sequence {
+  ParticipantBackgroundColor #FFFBEB
+  ParticipantBorderColor #B45309
+  ParticipantFontStyle bold
+  ActorBackgroundColor #FEF3C7
+  ActorBorderColor #92400E
+  LifeLineBorderColor #B45309
+  LifeLineBackgroundColor #FEF3C7
+  GroupBorderColor #92400E
+  GroupBackgroundColor #FEF3C7
+  GroupHeaderFontColor #78350F
+  DividerBackgroundColor #FEF3C7
+  DividerBorderColor #B45309
+}
+skinparam database {
+  BackgroundColor #FFFBEB
+  BorderColor #B45309
+}
+skinparam boundary {
+  BackgroundColor #FEF3C7
+  BorderColor #92400E
+}
+skinparam control {
+  BackgroundColor #FEF3C7
+  BorderColor #92400E
+}
+
+title Secuencia · CU-07 Agregar producto al carrito (HU-05)
+
+actor Cliente
+boundary "BotonAgregarCarrito\n(Next.js)" as Boton
+control "JwtAuthGuard" as Guard
+participant "AuthService" as Auth
+control "CarritoController" as Controller
+participant "CarritoService" as Servicio
+participant "JuguetesService\n(IInventario)" as Juguetes
+database "PostgreSQL\n(Neon)" as BD
+
+Cliente -> Boton : presiona «Agregar al carrito»\nen el catálogo o en el detalle
+activate Boton
+
+alt no hay sesión guardada en el navegador
+  Boton --> Cliente : lleva a /iniciar-sesion?volver=ruta actual\n(después de entrar vuelve a la misma página)
+else hay sesión
+  Boton -> Guard : POST /carrito/items { jugueteId }\nAuthorization: Bearer token
+  activate Guard
+  Guard -> Auth : verificarToken(token)
+  activate Auth
+  alt token inválido o vencido
+    Auth --> Guard : UnauthorizedException
+    Guard --> Boton : 401 «Inicia sesión para continuar»
+    Boton --> Cliente : borrarSesion() y lleva a iniciar sesión
+  else token válido
+    Auth --> Guard : UsuarioSesion { id, nombre, rol }
+    deactivate Auth
+    Guard -> Controller : agregar(usuario, AgregarItemDto)
+    deactivate Guard
+    activate Controller
+    Controller -> Servicio : agregarJuguete(usuario.id, jugueteId)
+    activate Servicio
+    Servicio -> Servicio : obtenerCarrito(usuarioId)
+    Servicio -> BD : buscar el carrito con sus items y juguetes\n(si no existe, INSERT carritos)
+    BD --> Servicio : Carrito
+    Servicio -> Servicio : item = carrito.buscarItem(jugueteId)\ncantidad = (item?.cantidad ?? 0) + 1
+    Servicio -> Juguetes : verificarStock(jugueteId, cantidad)
+    activate Juguetes
+    Juguetes -> BD : SELECT juguete activo
+    BD --> Juguetes : Juguete
+    alt juguete inexistente o desactivado
+      Juguetes --> Controller : NotFoundException
+      Controller --> Boton : 404 «Juguete no encontrado»
+      Boton --> Cliente : «Este juguete ya no está disponible»
+    else stock < cantidad
+      Juguetes --> Controller : ConflictException
+      Controller --> Boton : 409 «Solo quedan N unidades»
+      Boton --> Cliente : muestra «Solo quedan N unidades»;\nla cantidad no cambia
+    else hay stock
+      Juguetes --> Servicio : Juguete
+      deactivate Juguetes
+      alt el juguete ya estaba en el carrito
+        Servicio -> BD : UPDATE items_carrito SET cantidad
+      else juguete nuevo
+        Servicio -> BD : INSERT items_carrito (cantidad 1)
+      end
+      Servicio -> Servicio : obtenerCarrito(usuarioId)
+      Servicio --> Controller : Carrito actualizado
+      deactivate Servicio
+      Controller -> Controller : aCarritoDto(carrito)\nsubtotales, unidades y total
+      Controller --> Boton : 200 CarritoDto
+      deactivate Controller
+      Boton -> Boton : guardarCarrito(carrito)\nel ContadorCarrito se actualiza
+      Boton --> Cliente : «Agregado a tu carrito» y\nel contador muestra las unidades
+    end
+  end
+end
+deactivate Boton
+
+legend bottom
+  • El usuarioId sale del token (JwtAuthGuard), nunca del cuerpo: un cliente solo puede tocar su propio carrito.
+  • Un juguete aparece una sola vez por carrito (UNIQUE carrito_id, juguete_id): agregarlo otra vez suma 1 a su línea.
+  • Si dos clics crean la misma línea a la vez, la restricción UNIQUE frena al segundo, que vuelve a leer el carrito y suma 1.
+  • El stock se verifica con IInventario y se vuelve a verificar al comprar (CU-09), porque otro cliente puede comprar antes.
+endlegend
+@enduml
