@@ -1,0 +1,90 @@
+@startuml 03-paquetes
+!include estilo.iuml
+skinparam nodesep 60
+skinparam ranksep 70
+skinparam package {
+  BackgroundColor #FFFBEB
+  BorderColor #92400E
+}
+
+title Diagrama de paquetes (análisis) · El Trompo Feliz
+
+!function $b($n)
+!return "<back:#BFDBFE> B </back> " + $n
+!endfunction
+!function $c($n)
+!return "<back:#FED7AA> C </back> " + $n
+!endfunction
+!function $e($n)
+!return "<back:#BBF7D0> E </back> " + $n
+!endfunction
+
+package Administración [
+$b("PantallaAdminJuguetes")
+$b("PantallaInventario")
+$b("PantallaAdminCategorias")
+$b("PantallaAdminPedidos")
+$c("ControlAdminCatalogo")
+$c("ControlAdminPedidos")
+]
+
+package Pagos [
+$b("PantallaPago")
+$c("ControlPago")
+$e("Pago")
+]
+
+package Pedidos [
+$b("PantallaCheckout")
+$b("PantallaMisPedidos")
+$c("ControlPedidos")
+$e("Pedido")
+$e("DetallePedido")
+$e("DatosEntrega")
+]
+
+package Carrito [
+$b("PantallaCarrito")
+$c("ControlCarrito")
+$e("Carrito")
+$e("ItemCarrito")
+]
+
+package Catálogo [
+$b("PantallaCatalogo")
+$b("PantallaDetalleJuguete")
+$c("ControlCatalogo")
+$e("Juguete")
+$e("Categoria")
+]
+
+package Usuarios [
+$b("PantallaRegistro")
+$b("PantallaInicioSesion")
+$b("EncabezadoTienda")
+$c("ControlCuentas")
+$e("<i>Usuario</i> {abstract}")
+$e("Cliente (es un Usuario)")
+$e("Administrador (es un Usuario)")
+]
+
+' Dependencias entre paquetes (el que depende apunta al que usa). No hay ciclos.
+Pagos ..> Pedidos : <<use>>
+Pagos ..> Catálogo : <<use>>
+Administración ..> Catálogo : <<use>>
+Administración ..> Pedidos : <<use>>
+Pedidos ..> Carrito : <<use>>
+Pedidos ..> Catálogo : <<use>>
+Pedidos ..> Usuarios : <<use>>
+Carrito ..> Catálogo : <<use>>
+Carrito ..> Usuarios : <<use>>
+
+legend bottom
+  <back:#BFDBFE> B </back> frontera · <back:#FED7AA> C </back> control · <back:#BBF7D0> E </back> entidad
+  • Cada paquete agrupa las pantallas, el control y las entidades de un área del negocio.
+  • Las dependencias van en un solo sentido (sin ciclos): Catálogo y Usuarios no dependen de ningún otro paquete.
+  • Carrito usa Juguete (stock) y Cliente; Pedidos vacía el carrito al generar el pedido;
+     Pagos pasa el pedido a Pagado y descuenta el stock; Administración mantiene el catálogo y los pedidos.
+  • En el backend cada paquete es un módulo NestJS (juguetes, usuarios y auth, carrito, pedidos, pagos).
+endlegend
+@enduml

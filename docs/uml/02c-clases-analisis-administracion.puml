@@ -1,0 +1,89 @@
+@startuml 02c-clases-analisis-administracion
+!include estilo.iuml
+skinparam nodesep 90
+skinparam ranksep 70
+
+title Clases de análisis (3/3) · Administración\n<size:12>CU-12, CU-13, CU-14, CU-15</size>
+
+class PantallaAdminJuguetes <<(B,#BFDBFE) boundary>> {
+  listarJuguetes()
+  registrar()
+  editar(juguete)
+  eliminar(juguete)
+}
+class PantallaInventario <<(B,#BFDBFE) boundary>> {
+  mostrarStock()
+  actualizarStock(juguete, cantidad)
+}
+class PantallaAdminCategorias <<(B,#BFDBFE) boundary>> {
+  listarCategorias()
+  registrar()
+  renombrar(categoria)
+  eliminar(categoria)
+}
+class PantallaAdminPedidos <<(B,#BFDBFE) boundary>> {
+  listarPedidos(estado)
+  verDetalle(pedido)
+  cambiarEstado(pedido, estado)
+}
+
+class ControlAdminCatalogo <<(C,#FED7AA) control>> {
+  registrarJuguete(datos)
+  editarJuguete(juguete, datos)
+  desactivarJuguete(juguete)
+  actualizarStock(juguete, cantidad)
+  registrarCategoria(nombre)
+  renombrarCategoria(categoria, nombre)
+  eliminarCategoria(categoria)
+}
+class ControlAdminPedidos <<(C,#FED7AA) control>> {
+  listarPedidos(estado)
+  obtenerPedido(numero)
+  cambiarEstado(pedido, estado)
+}
+
+class Categoria <<(E,#BBF7D0) entity>> {
+  nombre
+}
+class Juguete <<(E,#BBF7D0) entity>> {
+  nombre
+  precio
+  stock
+  activo
+  tieneStockBajo()
+}
+class Pedido <<(E,#BBF7D0) entity>> {
+  numero
+  fecha
+  estado
+  total
+  avanzarEstado()
+}
+class Cliente <<(E,#BBF7D0) entity>>
+
+PantallaAdminJuguetes -down- ControlAdminCatalogo
+PantallaInventario -down- ControlAdminCatalogo
+PantallaAdminCategorias -down- ControlAdminCatalogo
+PantallaAdminPedidos -down- ControlAdminPedidos
+
+ControlAdminCatalogo -down- Juguete
+ControlAdminCatalogo -down- Categoria
+ControlAdminPedidos -down- Pedido
+
+Categoria "1" -right- "0..*" Juguete : clasifica >
+Pedido "0..*" -right- "1" Cliente : de >
+
+note bottom of Pedido
+  Estados: Pendiente → Pagado → Enviado → Entregado.
+  Solo avanza. El paso a Pagado ocurre
+  únicamente con el pago (CU-10).
+end note
+
+legend bottom
+  **B** frontera · **C** control · **E** entidad
+  • Solo un usuario con rol Administrador puede usar estas pantallas.
+  • «Eliminar» un juguete lo desactiva (activo = falso): los pedidos anteriores conservan sus datos.
+  • No se puede eliminar una categoría que todavía tiene juguetes.
+  • Stock bajo: 5 unidades o menos.
+endlegend
+@enduml

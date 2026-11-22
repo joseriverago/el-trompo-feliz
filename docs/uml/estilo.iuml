@@ -1,0 +1,69 @@
+' Estilo común de los diagramas de El Trompo Feliz.
+' Usa los colores de la tienda (ámbar) para que los diagramas se reconozcan en el informe.
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam monochrome false
+skinparam dpi 150
+' Arial y no Segoe UI: con Java 8, PlantUML dibuja Segoe UI siempre en negrita.
+skinparam defaultFontName "Arial"
+skinparam defaultFontSize 12
+skinparam defaultFontColor #27272A
+skinparam ArrowColor #92400E
+skinparam ArrowFontColor #78350F
+skinparam ArrowFontSize 11
+skinparam roundCorner 8
+skinparam classAttributeIconSize 0
+skinparam titleFontSize 16
+skinparam titleFontStyle bold
+skinparam titleFontColor #78350F
+skinparam class {
+  FontStyle bold
+  BackgroundColor #FFFBEB
+  BorderColor #B45309
+  HeaderBackgroundColor #FEF3C7
+  StereotypeFontColor #92400E
+  StereotypeFontSize 11
+  AttributeFontColor #27272A
+}
+skinparam usecase {
+  BackgroundColor #FFFBEB
+  BorderColor #B45309
+  FontSize 12
+}
+skinparam actor {
+  FontStyle bold
+  BackgroundColor #FEF3C7
+  BorderColor #92400E
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #92400E
+  FontColor #78350F
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #92400E
+  FontColor #78350F
+}
+skinparam component {
+  BackgroundColor #FFFBEB
+  BorderColor #B45309
+}
+skinparam interface {
+  BackgroundColor #FFFFFF
+  BorderColor #92400E
+}
+skinparam note {
+  BackgroundColor #F4F4F5
+  BorderColor #A1A1AA
+  FontColor #3F3F46
+  FontSize 11
+}
+skinparam legend {
+  BackgroundColor #FAFAFA
+  BorderColor #A1A1AA
+  FontColor #3F3F46
+  FontSize 11
+}
+skinparam wrapWidth 240
+skinparam maxMessageSize 180

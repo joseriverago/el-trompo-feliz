@@ -1,0 +1,80 @@
+@startuml 02a-clases-analisis-catalogo-cuentas
+!include estilo.iuml
+skinparam nodesep 90
+skinparam ranksep 70
+
+title Clases de análisis (1/3) · Catálogo y cuentas\n<size:12>CU-01, CU-02, CU-03, CU-04, CU-05, CU-06</size>
+
+class PantallaCatalogo <<(B,#BFDBFE) boundary>> {
+  mostrarJuguetes()
+  buscar(texto)
+  filtrar(categoria, edad, precio)
+}
+class PantallaDetalleJuguete <<(B,#BFDBFE) boundary>> {
+  mostrarDetalle()
+}
+class PantallaRegistro <<(B,#BFDBFE) boundary>> {
+  ingresarDatos()
+}
+class PantallaInicioSesion <<(B,#BFDBFE) boundary>> {
+  ingresarCredenciales()
+}
+class EncabezadoTienda <<(B,#BFDBFE) boundary>> {
+  cerrarSesion()
+}
+
+class ControlCatalogo <<(C,#FED7AA) control>> {
+  listarJuguetes()
+  buscarJuguetes(texto)
+  filtrarJuguetes(criterios)
+  obtenerDetalle(juguete)
+}
+class ControlCuentas <<(C,#FED7AA) control>> {
+  registrarCliente(datos)
+  iniciarSesion(correo, contrasena)
+  cerrarSesion()
+}
+
+class Categoria <<(E,#BBF7D0) entity>> {
+  nombre
+}
+class Juguete <<(E,#BBF7D0) entity>> {
+  nombre
+  descripcion
+  precio
+  imagenUrl
+  edadMinima
+  edadMaxima
+  stock
+  activo
+  estaAgotado()
+}
+abstract class Usuario <<(E,#BBF7D0) entity>> {
+  nombre
+  correo
+  contrasenaHash
+}
+class Cliente <<(E,#BBF7D0) entity>>
+class Administrador <<(E,#BBF7D0) entity>>
+
+PantallaCatalogo -down- ControlCatalogo
+PantallaDetalleJuguete -down- ControlCatalogo
+PantallaRegistro -down- ControlCuentas
+PantallaInicioSesion -down- ControlCuentas
+EncabezadoTienda -down- ControlCuentas
+
+ControlCatalogo -down- Juguete
+ControlCatalogo -down- Categoria
+ControlCuentas -down- Usuario
+
+Categoria "1" -right- "0..*" Juguete : clasifica >
+Usuario <|-- Cliente
+Usuario <|-- Administrador
+
+legend bottom
+  **B** frontera (pantalla) · **C** control (lógica del caso de uso) · **E** entidad (dato que se guarda)
+  • Cada pantalla habla con un solo control; las entidades no conocen a las pantallas.
+  • Un juguete está agotado cuando su stock es 0; el catálogo solo muestra juguetes activos.
+  • Cliente y Administrador son roles de Usuario: comparten correo y contraseña (guardada cifrada).
+endlegend
+@enduml

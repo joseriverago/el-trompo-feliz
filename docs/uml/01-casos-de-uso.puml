@@ -1,0 +1,54 @@
+@startuml 01-casos-de-uso
+!include estilo.iuml
+left to right direction
+skinparam nodesep 18
+skinparam ranksep 70
+
+title Diagrama de casos de uso · Tienda virtual El Trompo Feliz
+
+actor "Visitante" as Visitante
+actor "Cliente" as Cliente
+actor "Administrador" as Administrador
+
+rectangle "Tienda virtual El Trompo Feliz" {
+  usecase "**CU-01** Consultar catálogo\n<size:10>HU-01</size>" as CU01
+  usecase "**CU-02** Ver detalle de juguete\n<size:10>HU-02</size>" as CU02
+  usecase "**CU-03** Buscar y filtrar juguetes\n<size:10>HU-16, HU-17</size>" as CU03
+  usecase "**CU-04** Registrarse\n<size:10>HU-03</size>" as CU04
+  usecase "**CU-05** Iniciar sesión\n<size:10>HU-04</size>" as CU05
+  usecase "**CU-06** Cerrar sesión\n<size:10>HU-18</size>" as CU06
+  usecase "**CU-07** Agregar producto al carrito\n<size:10>HU-05</size>" as CU07
+  usecase "**CU-08** Gestionar carrito\n<size:10>HU-06, HU-07</size>" as CU08
+  usecase "**CU-09** Realizar compra\n<size:10>HU-08, HU-09</size>" as CU09
+  usecase "**CU-10** Procesar pago simulado\n<size:10>HU-09</size>" as CU10
+  usecase "**CU-11** Consultar mis pedidos\n<size:10>HU-10, HU-11</size>" as CU11
+  usecase "**CU-12** Gestionar productos\n<size:10>HU-12, HU-20</size>" as CU12
+  usecase "**CU-13** Gestionar categorías\n<size:10>HU-19</size>" as CU13
+  usecase "**CU-14** Actualizar stock\n<size:10>HU-13</size>" as CU14
+  usecase "**CU-15** Gestionar pedidos\n<size:10>HU-14, HU-15</size>" as CU15
+}
+
+' El cliente es un visitante que inició sesión: hereda todo lo que puede hacer el visitante.
+Visitante <|-[norank]- Cliente
+
+Visitante --> CU01
+Visitante --> CU04
+Visitante --> CU05
+CU01 <.. CU02 : <<extend>>
+CU01 <.. CU03 : <<extend>>
+
+Cliente --> CU06
+Cliente --> CU07
+Cliente --> CU08
+Cliente --> CU11
+Cliente --> CU09
+CU09 ..> CU10 : <<include>>
+
+CU05 <--- Administrador
+CU06 <--- Administrador
+CU12 <-- Administrador
+CU13 <-- Administrador
+CU14 <-- Administrador
+CU15 <-- Administrador
+
+@enduml
