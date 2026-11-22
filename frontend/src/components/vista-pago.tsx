@@ -119,7 +119,7 @@ function ConfirmacionPago({ pedido, pago }: { pedido: Pedido; pago: Pago | null 
     >
       <p className="text-lg font-semibold">¡Pago aprobado! Tu compra está confirmada.</p>
       <p className="mt-1">
-        Tu número de pedido es <strong className="font-mono">{pedido.numero}</strong>.
+        Tu número de pedido es <strong className="whitespace-nowrap font-mono">{pedido.numero}</strong>.
         {pago
           ? ` Pagaste ${formatearPrecio(pago.monto)} con la tarjeta terminada en ${pago.ultimosDigitos}.`
           : " Este pedido ya está pagado."}
