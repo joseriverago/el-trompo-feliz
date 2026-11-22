@@ -65,3 +65,4 @@ En el plan gratuito, el servicio se suspende tras 15 minutos sin visitas; la pri
 | `GET /juguetes` | Catálogo: juguetes activos con su categoría, ordenados por nombre. `agotado` es `true` cuando el stock es 0 |
 | `GET /juguetes/:id` | Detalle de un juguete activo, con su descripción. Responde 404 «Juguete no encontrado» si no existe, está desactivado o el id no es un número |
 | `POST /auth/registro` | Registra un cliente con `nombre`, `correo` y `contrasena` (8 caracteres o más). Responde 201 con `{ token, usuario }` (sesión iniciada), 400 con `errores` por campo o 409 «Este correo ya está registrado». El correo se guarda en minúsculas y la contraseña cifrada con bcrypt |
+| `POST /auth/inicio-sesion` | Inicia sesión con `correo` y `contrasena`. Responde 200 con `{ token, usuario }`, 400 con `errores` por campo si falta un dato, o 401 «Correo o contraseña incorrectos», el mismo mensaje si el correo no existe o si la contraseña no coincide |

@@ -16,6 +16,23 @@ export class UsuariosService {
     return this.usuarios.findOneBy({ correo });
   }
 
+  /**
+   * Igual que buscarPorCorreo, pero también lee el hash de la contraseña, que las demás
+   * consultas no traen. Solo lo usa el inicio de sesión para comparar la contraseña.
+   */
+  buscarConContrasena(correo: string): Promise<Usuario | null> {
+    return this.usuarios.findOne({
+      where: { correo },
+      select: {
+        id: true,
+        nombre: true,
+        correo: true,
+        rol: true,
+        contrasenaHash: true,
+      },
+    });
+  }
+
   /** Crea una cuenta con el rol CLIENTE. La contraseña llega ya cifrada con bcrypt. */
   crearCliente(
     nombre: string,

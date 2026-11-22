@@ -1,6 +1,10 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { hash } from 'bcryptjs';
+import { compare, hash, hashSync } from 'bcryptjs';
 import type { Usuario } from '../usuarios/entities/usuario.entity.js';
 import { UsuariosService } from '../usuarios/usuarios.service.js';
 import type { RegistroDto } from './dto/registro.dto.js';
@@ -10,6 +14,15 @@ import type { SesionDto, UsuarioPublico } from './sesion.js';
 const COSTO_BCRYPT = 10;
 
 export const CORREO_REGISTRADO = 'Este correo ya está registrado';
+
+/** Mismo mensaje si el correo no existe o si la contraseña no coincide: no revela cuál de los dos falló. */
+export const CREDENCIALES_INCORRECTAS = 'Correo o contraseña incorrectos';
+
+/**
+ * Si el correo no existe, la contraseña se compara igual contra este hash de relleno.
+ * Así la respuesta tarda lo mismo en los dos casos y nadie puede averiguar qué correos tienen cuenta.
+ */
+const HASH_DE_RELLENO = hashSync('relleno-para-igualar-tiempos', COSTO_BCRYPT);
 
 /** Código de PostgreSQL para una restricción UNIQUE violada. */
 const VIOLACION_UNICA = '23505';
@@ -72,6 +85,29 @@ export class AuthService {
       throw error;
     }
 
+    return this.crearSesion(usuario);
+  }
+
+  /**
+   * Inicia la sesión con el correo y la contraseña (HU-04). Si el correo no existe o la
+   * contraseña no coincide, responde 401 con el mismo mensaje genérico.
+   */
+  async iniciarSesion(correo: string, contrasena: string): Promise<SesionDto> {
+    const usuario = await this.usuariosService.buscarConContrasena(correo);
+    const coincide = await compare(
+      contrasena,
+      usuario?.contrasenaHash ?? HASH_DE_RELLENO,
+    );
+    if (!usuario || !coincide) {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: CREDENCIALES_INCORRECTAS,
+      });
+    }
+    return this.crearSesion(usuario);
+  }
+
+  private crearSesion(usuario: Usuario): SesionDto {
     return { token: this.firmarToken(usuario), usuario: aUsuarioPublico(usuario) };
   }
 

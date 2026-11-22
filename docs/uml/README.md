@@ -79,7 +79,8 @@ Tres vistas: el modelo de dominio (entidades de TypeORM) y los controllers y ser
 - **Controller + service.** Cada módulo de NestJS tiene un controller, que expone las rutas HTTP, y un service, que aplica las reglas del negocio usando el `Repository` de TypeORM.
 - **Seguridad.** `JwtAuthGuard` identifica al usuario a partir del JWT, y `RolesGuard` deja pasar solo al rol ADMINISTRADOR. El `usuarioId` siempre sale del token, nunca del cuerpo de la petición.
 - **Pago en una transacción.** `PagosService.pagar()` valida la tarjeta, verifica el stock, guarda el `Pago`, descuenta el stock y marca el pedido como Pagado en una sola transacción.
-- **Ya implementado.** `JuguetesController` y `JuguetesService` con `listarCatalogo` y `obtenerDetalle` (HU-01, HU-02). El resto de nombres guía las próximas historias.
+- **Ya implementado.** `JuguetesController` y `JuguetesService` con `listarCatalogo` y `obtenerDetalle` (HU-01, HU-02); `AuthController`, `AuthService` y `UsuariosService` con `registrar` (HU-03) e `iniciarSesion` (HU-04). El resto de nombres guía las próximas historias.
+- **El hash no sale de la base de datos.** La columna `contrasena_hash` tiene `select: false`: solo `UsuariosService.buscarConContrasena` la lee, y solo para el inicio de sesión.
 
 ## 5. Subsistemas con interfaces
 
