@@ -1,0 +1,95 @@
+@startuml 04c-clases-diseno-compra
+!include estilo.iuml
+skinparam wrapWidth 640
+skinparam nodesep 50
+skinparam ranksep 70
+
+title Clases de diseño (3/3) · Carrito, pedidos y pago (backend NestJS)
+
+class CarritoController <<controller>> {
+  + obtener(usuario: UsuarioSesion): Promise<CarritoDto>
+  + agregar(usuario: UsuarioSesion, datos: AgregarItemDto): Promise<CarritoDto>
+  + cambiarCantidad(usuario: UsuarioSesion, itemId: number, datos: CambiarCantidadDto): Promise<CarritoDto>
+  + quitar(usuario: UsuarioSesion, itemId: number): Promise<CarritoDto>
+}
+class CarritoService <<service>> {
+  - carritos: Repository<Carrito>
+  + obtenerCarrito(usuarioId: number): Promise<Carrito>
+  + agregarJuguete(usuarioId: number, jugueteId: number): Promise<Carrito>
+  + cambiarCantidad(usuarioId: number, itemId: number, cantidad: number): Promise<Carrito>
+  + quitarItem(usuarioId: number, itemId: number): Promise<Carrito>
+  + vaciar(gestor: EntityManager, carrito: Carrito): Promise<void>
+}
+class PedidosController <<controller>> {
+  + generar(usuario: UsuarioSesion, datos: DatosEntregaDto): Promise<PedidoDto>
+  + listarMios(usuario: UsuarioSesion): Promise<PedidoResumenDto[]>
+  + obtenerMio(usuario: UsuarioSesion, numero: string): Promise<PedidoDto>
+  + listarTodos(estado?: EstadoPedido): Promise<PedidoResumenDto[]>
+  + cambiarEstado(numero: string, datos: CambiarEstadoDto): Promise<PedidoDto>
+}
+class PedidosService <<service>> {
+  - pedidos: Repository<Pedido>
+  + generarPedido(usuarioId: number, datos: DatosEntregaDto): Promise<Pedido>
+  + listarMisPedidos(usuarioId: number): Promise<Pedido[]>
+  + obtenerPedido(usuarioId: number, numero: string): Promise<Pedido>
+  + listarTodos(estado?: EstadoPedido): Promise<Pedido[]>
+  + cambiarEstado(numero: string, nuevo: EstadoPedido): Promise<Pedido>
+  + marcarPagado(gestor: EntityManager, pedido: Pedido): Promise<void>
+  - generarNumero(): string
+}
+class PagosController <<controller>> {
+  + pagar(usuario: UsuarioSesion, numero: string, tarjeta: TarjetaDto): Promise<PagoDto>
+}
+class PagosService <<service>> {
+  - fuenteDatos: DataSource
+  + pagar(usuarioId: number, numero: string, tarjeta: TarjetaDto): Promise<Pago>
+  - validarTarjeta(tarjeta: TarjetaDto): void
+  - esTarjetaRechazada(numero: string): boolean
+}
+class TarjetaDto <<dto>> {
+  + numero: string
+  + titular: string
+  + vencimiento: string
+  + cvv: string
+}
+class JuguetesService <<service>> {
+  + verificarStock(jugueteId: number, cantidad: number): Promise<Juguete>
+  + descontarStock(gestor: EntityManager, lineas: LineaStock[]): Promise<void>
+}
+class Carrito <<entity>>
+class Pedido <<entity>>
+class Pago <<entity>>
+hide Carrito members
+hide Pedido members
+hide Pago members
+
+CarritoController --> "1" CarritoService
+PedidosController --> "1" PedidosService
+PagosController --> "1" PagosService
+PagosController ..> TarjetaDto
+
+CarritoService --> "1" JuguetesService : verifica stock
+PedidosService --> "1" CarritoService : lee y vacía
+PedidosService --> "1" JuguetesService : verifica stock
+PagosService --> "1" PedidosService : marca pagado
+PagosService --> "1" JuguetesService : descuenta stock
+
+CarritoService ..> Carrito
+PedidosService ..> Pedido
+PagosService ..> Pago
+
+note right of PagosService
+  pagar() abre una transacción:
+  valida la tarjeta, verifica el stock,
+  guarda el Pago, descuenta el stock y
+  marca el pedido Pagado. Si algo falla,
+  no se guarda nada (CU-10, HU-09).
+end note
+
+legend bottom
+  • Todas las rutas de esta vista usan JwtAuthGuard: el usuarioId sale del token, nunca del cuerpo de la petición.
+  • obtenerPedido() busca por número y por usuarioId, así un cliente no puede ver el pedido de otro («Pedido no encontrado»).
+  • listarTodos() y cambiarEstado() usan además RolesGuard (solo ADMINISTRADOR).
+  • TarjetaDto solo existe durante la petición: del pago se guardan los últimos 4 dígitos y el resultado.
+endlegend
+@enduml
