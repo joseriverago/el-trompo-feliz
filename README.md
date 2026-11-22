@@ -36,7 +36,7 @@ Requisitos: Node.js 20.9 o superior y npm.
 ```bash
 cd backend
 npm install
-cp .env.example .env      # completar DATABASE_URL y las contraseñas de prueba
+cp .env.example .env      # completar DATABASE_URL, JWT_SECRET y las contraseñas de prueba
 npm run db:preparar       # crea las tablas y carga los datos semilla
 npm run start:dev
 ```
