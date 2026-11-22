@@ -1,58 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { IconoCarrito } from "@/components/icono-carrito";
 import { LineaCarrito } from "@/components/linea-carrito";
-import { guardarCarrito, obtenerCarrito, useCarrito } from "@/lib/carrito";
-import { ENLACE } from "@/lib/estilos";
+import { useCarrito, useLeerCarrito } from "@/lib/carrito";
+import { BOTON_COMPRA, BOTON_PRINCIPAL, ENLACE } from "@/lib/estilos";
 import { formatearPrecio } from "@/lib/juguetes";
-import { rutaIniciarSesion } from "@/lib/rutas";
-import { borrarSesion, useSesion } from "@/lib/sesion";
-
-const BOTON_PRINCIPAL =
-  "rounded-full bg-amber-500 px-5 py-2 text-sm font-semibold text-zinc-950 transition-colors hover:bg-amber-400";
-
-const RUTA = "/carrito";
+import { useSesionObligatoria } from "@/lib/sesion-obligatoria";
 
 /**
  * Contenido de la página del carrito: cada juguete con su cantidad y «Quitar» (HU-06), los
- * subtotales y el total (HU-07), o «Tu carrito está vacío» con un enlace al catálogo.
+ * subtotales y el total (HU-07), y «Comprar», que lleva a los datos de entrega (HU-08).
+ * Si está vacío, «Tu carrito está vacío» con un enlace al catálogo.
  * Necesita sesión iniciada; el carrito se guarda en la base de datos.
  */
 export function VistaCarrito() {
-  const router = useRouter();
-  const sesion = useSesion();
+  const sesion = useSesionObligatoria("/carrito");
   const carrito = useCarrito();
   const token = sesion?.token;
-  const [fallo, setFallo] = useState(false);
-  const [lectura, setLectura] = useState(0);
-
-  // Sin sesión no hay carrito: se pide iniciarla y después se vuelve a esta página.
-  useEffect(() => {
-    if (sesion === null) router.replace(rutaIniciarSesion(RUTA));
-  }, [sesion, router]);
-
-  // Al abrir la página se vuelve a leer el carrito, para tener el stock actual de cada juguete.
-  useEffect(() => {
-    if (!token) return;
-    const controlador = new AbortController();
-    obtenerCarrito(token, controlador.signal)
-      .then((leido) => {
-        if (leido) guardarCarrito(leido);
-        else borrarSesion(); // 401: el token ya no sirve.
-      })
-      .catch(() => {
-        if (!controlador.signal.aborted) setFallo(true);
-      });
-    return () => controlador.abort();
-  }, [token, lectura]);
-
-  function volverALeer() {
-    setFallo(false);
-    setLectura((anterior) => anterior + 1);
-  }
+  const { fallo, volverALeer } = useLeerCarrito(token);
 
   if (!token || (!carrito && !fallo)) {
     return (
@@ -113,11 +79,15 @@ export function VistaCarrito() {
           {formatearPrecio(carrito.total)}
         </p>
       </div>
-      <p className="mt-6">
-        <Link href="/" className={ENLACE}>
+      <div className="mt-6 flex flex-col-reverse items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <Link href="/" className={`${ENLACE} text-center`}>
           ← Seguir comprando
         </Link>
-      </p>
+        {/* HU-08: lleva a los datos de entrega; el stock de cada juguete se verifica al generar el pedido. */}
+        <Link href="/comprar" className={BOTON_COMPRA}>
+          Comprar
+        </Link>
+      </div>
     </section>
   );
 }
