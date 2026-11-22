@@ -3,9 +3,19 @@ import { Carrito } from '../carrito/entities/carrito.entity.js';
 import { ItemCarrito } from '../carrito/entities/item-carrito.entity.js';
 import { Categoria } from '../categorias/entities/categoria.entity.js';
 import { Juguete } from '../juguetes/entities/juguete.entity.js';
+import { DetallePedido } from '../pedidos/entities/detalle-pedido.entity.js';
+import { Pedido } from '../pedidos/entities/pedido.entity.js';
 import { Usuario } from '../usuarios/entities/usuario.entity.js';
 
-export const ENTIDADES = [Categoria, Juguete, Usuario, Carrito, ItemCarrito];
+export const ENTIDADES = [
+  Categoria,
+  Juguete,
+  Usuario,
+  Carrito,
+  ItemCarrito,
+  Pedido,
+  DetallePedido,
+];
 
 /**
  * Conexión a PostgreSQL (Neon) con la cadena de DATABASE_URL.

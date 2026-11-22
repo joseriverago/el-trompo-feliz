@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { CarritoModule } from './carrito/carrito.module.js';
 import { opcionesBaseDeDatos } from './database/opciones-base-de-datos.js';
 import { JuguetesModule } from './juguetes/juguetes.module.js';
+import { PedidosModule } from './pedidos/pedidos.module.js';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { JuguetesModule } from './juguetes/juguetes.module.js';
     JuguetesModule,
     AuthModule,
     CarritoModule,
+    PedidosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

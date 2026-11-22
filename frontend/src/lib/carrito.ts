@@ -1,5 +1,6 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { API_URL } from "@/lib/api";
+import { borrarSesion } from "@/lib/sesion";
 
 /** Una línea del carrito tal como la devuelve la API. */
 export interface ItemCarrito {
@@ -104,4 +105,38 @@ export function useCarrito(): Carrito | null {
     () => carritoActual,
     () => null,
   );
+}
+
+/** Carrito sin juguetes: así queda después de generar el pedido (HU-08). */
+export const CARRITO_VACIO: Carrito = { items: [], unidades: 0, total: 0 };
+
+/**
+ * Vuelve a leer el carrito al abrir una página (carrito o compra), para tener el stock actual
+ * de cada juguete. `fallo` indica que la API no respondió; `volverALeer` lo intenta otra vez.
+ */
+export function useLeerCarrito(token: string | undefined): { fallo: boolean; volverALeer: () => void } {
+  const [fallo, setFallo] = useState(false);
+  const [lectura, setLectura] = useState(0);
+
+  useEffect(() => {
+    if (!token) return;
+    const controlador = new AbortController();
+    obtenerCarrito(token, controlador.signal)
+      .then((leido) => {
+        if (leido) guardarCarrito(leido);
+        else borrarSesion(); // 401: el token ya no sirve.
+      })
+      .catch(() => {
+        if (!controlador.signal.aborted) setFallo(true);
+      });
+    return () => controlador.abort();
+  }, [token, lectura]);
+
+  return {
+    fallo,
+    volverALeer: () => {
+      setFallo(false);
+      setLectura((anterior) => anterior + 1);
+    },
+  };
 }

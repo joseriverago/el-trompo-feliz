@@ -16,7 +16,7 @@ import { ItemCarrito } from './entities/item-carrito.entity.js';
   ],
   controllers: [CarritoController],
   providers: [CarritoService],
-  // Pedidos leerá y vaciará el carrito al generar el pedido (HU-08).
+  // ICarrito: Pedidos lee y vacía el carrito al generar el pedido (HU-08).
   exports: [CarritoService],
 })
 export class CarritoModule {}
