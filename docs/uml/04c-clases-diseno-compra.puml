@@ -14,6 +14,7 @@ class CarritoController <<controller>> {
 }
 class CarritoService <<service>> {
   - carritos: Repository<Carrito>
+  - items: Repository<ItemCarrito>
   + obtenerCarrito(usuarioId: number): Promise<Carrito>
   + agregarJuguete(usuarioId: number, jugueteId: number): Promise<Carrito>
   + cambiarCantidad(usuarioId: number, itemId: number, cantidad: number): Promise<Carrito>
@@ -88,6 +89,7 @@ end note
 
 legend bottom
   • Todas las rutas de esta vista usan JwtAuthGuard: el usuarioId sale del token, nunca del cuerpo de la petición.
+  • Ya están implementados obtener/obtenerCarrito y agregar/agregarJuguete (HU-05); su secuencia está en el diagrama 06a.
   • obtenerPedido() busca por número y por usuarioId, así un cliente no puede ver el pedido de otro («Pedido no encontrado»).
   • listarTodos() y cambiarEstado() usan además RolesGuard (solo ADMINISTRADOR).
   • TarjetaDto solo existe durante la petición: del pago se guardan los últimos 4 dígitos y el resultado.

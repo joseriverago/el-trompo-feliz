@@ -16,3 +16,13 @@ export interface SesionDto {
   token: string;
   usuario: UsuarioPublico;
 }
+
+/**
+ * Usuario de una petición con sesión iniciada, tal como lo deja JwtAuthGuard.
+ * Sale del token: las rutas protegidas nunca leen el id del cuerpo de la petición.
+ */
+export interface UsuarioSesion {
+  id: number;
+  nombre: string;
+  rol: Rol;
+}

@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ID_MAXIMO } from '../database/limites.js';
 import { Juguete } from './entities/juguete.entity.js';
 import {
   aJugueteCatalogo,
@@ -15,8 +20,13 @@ import {
  */
 const ORDEN_ALFABETICO = new Intl.Collator('es', { sensitivity: 'base' });
 
-/** Mayor valor de una columna integer de PostgreSQL; un id mayor no puede existir. */
-const ID_MAXIMO = 2_147_483_647;
+const JUGUETE_NO_ENCONTRADO = 'Juguete no encontrado';
+
+/** Mensaje cuando se piden más unidades de las que hay, por ejemplo «Solo quedan 3 unidades». */
+export function mensajeSinStock(stock: number): string {
+  if (stock <= 0) return 'Este juguete está agotado';
+  return stock === 1 ? 'Solo queda 1 unidad' : `Solo quedan ${stock} unidades`;
+}
 
 @Injectable()
 export class JuguetesService {
@@ -46,8 +56,31 @@ export class JuguetesService {
           })
         : null;
     if (!juguete) {
-      throw new NotFoundException('Juguete no encontrado');
+      throw new NotFoundException(JUGUETE_NO_ENCONTRADO);
     }
     return aJugueteDetalle(juguete);
+  }
+
+  /**
+   * IInventario: confirma que el juguete sigue a la venta y que hay al menos `cantidad`
+   * unidades. Responde 404 si no existe o fue desactivado, y 409 «Solo quedan N unidades»
+   * si no alcanza el stock. El carrito y la compra lo usan antes de guardar.
+   */
+  async verificarStock(jugueteId: number, cantidad: number): Promise<Juguete> {
+    const juguete = await this.juguetes.findOneBy({
+      id: jugueteId,
+      activo: true,
+    });
+    if (!juguete) {
+      throw new NotFoundException(JUGUETE_NO_ENCONTRADO);
+    }
+    if (juguete.stock < cantidad) {
+      throw new ConflictException({
+        statusCode: 409,
+        message: mensajeSinStock(juguete.stock),
+        stock: juguete.stock,
+      });
+    }
+    return juguete;
   }
 }

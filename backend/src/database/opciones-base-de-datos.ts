@@ -1,9 +1,11 @@
 import type { DataSourceOptions } from 'typeorm';
+import { Carrito } from '../carrito/entities/carrito.entity.js';
+import { ItemCarrito } from '../carrito/entities/item-carrito.entity.js';
 import { Categoria } from '../categorias/entities/categoria.entity.js';
 import { Juguete } from '../juguetes/entities/juguete.entity.js';
 import { Usuario } from '../usuarios/entities/usuario.entity.js';
 
-export const ENTIDADES = [Categoria, Juguete, Usuario];
+export const ENTIDADES = [Categoria, Juguete, Usuario, Carrito, ItemCarrito];
 
 /**
  * Conexión a PostgreSQL (Neon) con la cadena de DATABASE_URL.

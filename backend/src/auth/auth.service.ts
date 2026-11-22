@@ -5,10 +5,12 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash, hashSync } from 'bcryptjs';
+import { esViolacionUnica } from '../database/errores.js';
 import type { Usuario } from '../usuarios/entities/usuario.entity.js';
+import type { Rol } from '../usuarios/enums/rol.enum.js';
 import { UsuariosService } from '../usuarios/usuarios.service.js';
 import type { RegistroDto } from './dto/registro.dto.js';
-import type { SesionDto, UsuarioPublico } from './sesion.js';
+import type { SesionDto, UsuarioPublico, UsuarioSesion } from './sesion.js';
 
 /** Mismo costo que los usuarios de la semilla. */
 const COSTO_BCRYPT = 10;
@@ -24,18 +26,14 @@ export const CREDENCIALES_INCORRECTAS = 'Correo o contraseña incorrectos';
  */
 const HASH_DE_RELLENO = hashSync('relleno-para-igualar-tiempos', COSTO_BCRYPT);
 
-/** Código de PostgreSQL para una restricción UNIQUE violada. */
-const VIOLACION_UNICA = '23505';
+/** Respuesta de las rutas que necesitan una sesión cuando el token falta, es inválido o venció. */
+export const SESION_REQUERIDA = 'Inicia sesión para continuar';
 
-function esViolacionUnica(error: unknown): boolean {
-  const conCodigo = error as {
-    code?: string;
-    driverError?: { code?: string };
-  };
-  return (
-    conCodigo?.code === VIOLACION_UNICA ||
-    conCodigo?.driverError?.code === VIOLACION_UNICA
-  );
+/** Contenido del JWT que firma la API. */
+interface ContenidoToken {
+  sub: number;
+  nombre: string;
+  rol: Rol;
 }
 
 function correoYaRegistrado(): ConflictException {
@@ -107,16 +105,36 @@ export class AuthService {
     return this.crearSesion(usuario);
   }
 
+  /**
+   * ISesion: comprueba la firma y la vigencia del JWT y devuelve quién es el usuario.
+   * Lo usa JwtAuthGuard en cada ruta protegida. Responde 401 si el token no sirve.
+   */
+  verificarToken(token: string): UsuarioSesion {
+    try {
+      const { sub, nombre, rol } = this.jwt.verify<ContenidoToken>(token);
+      return { id: sub, nombre, rol };
+    } catch {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: SESION_REQUERIDA,
+      });
+    }
+  }
+
   private crearSesion(usuario: Usuario): SesionDto {
-    return { token: this.firmarToken(usuario), usuario: aUsuarioPublico(usuario) };
+    return {
+      token: this.firmarToken(usuario),
+      usuario: aUsuarioPublico(usuario),
+    };
   }
 
   /** El JWT lleva el id (sub), el nombre y el rol; dura 7 días. */
   private firmarToken(usuario: Usuario): string {
-    return this.jwt.sign({
+    const contenido: ContenidoToken = {
       sub: usuario.id,
       nombre: usuario.nombre,
       rol: usuario.rol,
-    });
+    };
+    return this.jwt.sign(contenido);
   }
 }
