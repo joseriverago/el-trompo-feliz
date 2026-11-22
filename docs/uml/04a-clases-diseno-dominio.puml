@@ -61,6 +61,7 @@ class Pedido <<entity>> {
   - estado: EstadoPedido
   - total: number
   - creadoEn: Date
+  + calcularTotal(): number
   + estaPendiente(): boolean
   + avanzarA(nuevo: EstadoPedido): void
 }
@@ -103,7 +104,8 @@ legend bottom
   • DatosEntrega es un objeto embebido: sus columnas viven en la tabla pedidos.
   • ItemCarrito no copia el precio: el carrito siempre muestra el precio actual. Un juguete aparece una sola vez por carrito (UNIQUE).
   • calcularSubtotal() y calcularTotal() (HU-07) cuentan en céntimos enteros: 24.90 × 3 da 74.70, sin errores de redondeo.
-  • DetallePedido copia nombre y precio del juguete al generar el pedido; Juguete.activo = falso lo saca del catálogo sin borrarlo.
+  • DetallePedido copia nombre y precio del juguete al generar el pedido (HU-08); Juguete.activo = falso lo saca del catálogo sin borrarlo.
+  • Pedido, DetallePedido y DatosEntrega ya están en el código (HU-08): numero sigue el formato TF-AAAAMMDD-NNNNNN y es UNIQUE.
   • avanzarA() solo permite Pendiente → Pagado → Enviado → Entregado; Pago guarda cada intento, solo los últimos 4 dígitos.
 endlegend
 @enduml

@@ -1,0 +1,113 @@
+@startuml 06b-secuencia-realizar-compra
+!include estilo.iuml
+skinparam maxMessageSize 220
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam sequence {
+  ParticipantBackgroundColor #FFFBEB
+  ParticipantBorderColor #B45309
+  ParticipantFontStyle bold
+  ActorBackgroundColor #FEF3C7
+  ActorBorderColor #92400E
+  LifeLineBorderColor #B45309
+  LifeLineBackgroundColor #FEF3C7
+  GroupBorderColor #92400E
+  GroupBackgroundColor #FEF3C7
+  GroupHeaderFontColor #78350F
+  DividerBackgroundColor #FEF3C7
+  DividerBorderColor #B45309
+}
+skinparam database {
+  BackgroundColor #FFFBEB
+  BorderColor #B45309
+}
+skinparam boundary {
+  BackgroundColor #FEF3C7
+  BorderColor #92400E
+}
+skinparam control {
+  BackgroundColor #FEF3C7
+  BorderColor #92400E
+}
+
+title Secuencia · CU-09 Realizar compra: datos de entrega y generación del pedido (HU-08)
+
+actor Cliente
+boundary "VistaComprar y\nFormularioEntrega\n(Next.js)" as Pagina
+control "JwtAuthGuard" as Guard
+control "PedidosController" as Controller
+participant "PedidosService" as Servicio
+participant "CarritoService\n(ICarrito)" as Carrito
+participant "JuguetesService\n(IInventario)" as Juguetes
+database "PostgreSQL\n(Neon)" as BD
+
+Cliente -> Pagina : presiona «Comprar» en /carrito
+activate Pagina
+Pagina --> Cliente : /comprar: formulario de entrega junto al\nresumen del carrito y el total (GET /carrito)
+Cliente -> Pagina : completa los datos y presiona\n«Continuar al pago»
+Pagina -> Pagina : validarEntrega(datos)
+
+alt falta un dato o el teléfono no tiene 9 dígitos
+  Pagina --> Cliente : mensaje junto a cada campo y foco en el primero;\nno se llama a la API
+else datos completos
+  Pagina -> Guard : POST /pedidos { destinatario, telefono,\ndireccion, distrito, referencia }\nAuthorization: Bearer token
+  activate Guard
+  alt token inválido o vencido
+    Guard --> Pagina : 401 «Inicia sesión para continuar»
+    Pagina --> Cliente : borrarSesion() y lleva a iniciar sesión\n(después vuelve a /comprar)
+  else token válido
+    Guard -> Controller : generar(usuario, DatosEntregaDto)\n(el pipe valida el DTO: si falla, 400 con un mensaje por campo)
+    deactivate Guard
+    activate Controller
+    Controller -> Servicio : generarPedido(usuario.id, datos)
+    activate Servicio
+    Servicio -> Carrito : obtenerCarrito(usuarioId)
+    Carrito -> BD : SELECT carrito con items y juguetes
+    BD --> Carrito : Carrito
+    Carrito --> Servicio : Carrito
+    alt el carrito está vacío
+      Servicio --> Controller : BadRequestException
+      Controller --> Pagina : 400 «Tu carrito está vacío»
+      Pagina --> Cliente : muestra el mensaje
+    else hay juguetes
+      loop cada línea del carrito (las consultas van en paralelo)
+        Servicio -> Juguetes : verificarStock(jugueteId, cantidad)
+        Juguetes -> BD : SELECT juguete activo
+        BD --> Juguetes : Juguete
+        Juguetes --> Servicio : Juguete, o 409 «Solo quedan N unidades»,\no 404 si ya no se vende
+      end
+      alt algún juguete supera su stock o ya no se vende
+        Servicio --> Controller : ConflictException { juguetes: nombre, stock, mensaje }
+        Controller --> Pagina : 409 «Ajusta tu carrito»
+        Pagina --> Cliente : «No generamos tu pedido: ajusta estos juguetes»\ncon cada juguete; el resumen vuelve a leer el carrito
+      else hay stock de todos
+        group transacción: fuenteDatos.transaction(gestor)
+          Servicio -> Servicio : generarNumero(): TF-AAAAMMDD-NNNNNN\ndetalles con el nombre y el precio vigentes\ntotal = calcularTotal()
+          Servicio -> BD : INSERT pedidos (estado PENDIENTE)\nINSERT detalles_pedido
+          Servicio -> Carrito : vaciar(gestor, carrito)
+          Carrito -> BD : DELETE items_carrito de esas líneas
+          opt alguna línea ya no estaba (por ejemplo, doble clic)
+            Carrito --> Servicio : ConflictException: ROLLBACK, no se guarda nada
+          end
+        end
+        Servicio --> Controller : Pedido
+        deactivate Servicio
+        Controller -> Controller : aPedidoDto(pedido)
+        Controller --> Pagina : 201 PedidoDto
+        deactivate Controller
+        Pagina -> Pagina : guardarCarrito(vacío):\nel contador del encabezado pasa a 0
+        Pagina --> Cliente : lleva a /pedidos/{numero}/pago: número,\nestado Pendiente, juguetes, entrega y total
+      end
+    end
+  end
+end
+deactivate Pagina
+
+legend bottom
+  • El usuarioId sale del token (JwtAuthGuard): el pedido siempre se genera con el carrito del cliente que inició sesión.
+  • El stock solo se verifica aquí; se descuenta al aprobarse el pago (HU-09), en la misma transacción que pasa el pedido a Pagado.
+  • DetallePedido copia el nombre y el precio vigentes: si después cambia el precio en el catálogo, el pedido no cambia.
+  • El pedido y el vaciado del carrito van en una sola transacción: o se guardan los dos o ninguno. Si el número ya existía (UNIQUE), se prueba con otro.
+  • La página de pago lee el pedido con GET /pedidos/{numero}; con el número de otro cliente responde 404 «Pedido no encontrado».
+endlegend
+@enduml

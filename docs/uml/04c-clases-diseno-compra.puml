@@ -30,6 +30,7 @@ class PedidosController <<controller>> {
 }
 class PedidosService <<service>> {
   - pedidos: Repository<Pedido>
+  - fuenteDatos: DataSource
   + generarPedido(usuarioId: number, datos: DatosEntregaDto): Promise<Pedido>
   + listarMisPedidos(usuarioId: number): Promise<Pedido[]>
   + obtenerPedido(usuarioId: number, numero: string): Promise<Pedido>
@@ -90,8 +91,9 @@ end note
 legend bottom
   • Todas las rutas de esta vista usan JwtAuthGuard: el usuarioId sale del token, nunca del cuerpo de la petición.
   • Ya están implementados obtener/obtenerCarrito y agregar/agregarJuguete (HU-05; su secuencia está en el diagrama 06a),
-     y cambiarCantidad y quitar/quitarItem (HU-06).
+     cambiarCantidad y quitar/quitarItem (HU-06), y generar/generarPedido, obtenerMio/obtenerPedido y vaciar (HU-08; su secuencia está en el diagrama 06b).
   • cambiarCantidad() y quitarItem() buscan la línea dentro del carrito del usuario del token: con la línea de otro cliente responden 404.
+  • generarPedido() verifica el stock de cada línea; luego guarda el pedido Pendiente y llama a vaciar() en la misma transacción (fuenteDatos).
   • obtenerPedido() busca por número y por usuarioId, así un cliente no puede ver el pedido de otro («Pedido no encontrado»).
   • listarTodos() y cambiarEstado() usan además RolesGuard (solo ADMINISTRADOR).
   • TarjetaDto solo existe durante la petición: del pago se guardan los últimos 4 dígitos y el resultado.
