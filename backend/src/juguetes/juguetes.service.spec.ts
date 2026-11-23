@@ -1,10 +1,18 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { type EntityManager, MoreThanOrEqual } from 'typeorm';
 import type { Categoria } from '../categorias/entities/categoria.entity.js';
 import { Juguete } from './entities/juguete.entity.js';
+import type { RegistrarJugueteDto } from './dto/guardar-juguete.dto.js';
 import {
+  CATEGORIA_INEXISTENTE,
+  EDADES_INVERTIDAS,
+  JUGUETE_NO_ENCONTRADO,
   JuguetesService,
   mensajeSinStock,
   STOCK_INSUFICIENTE,
@@ -33,12 +41,18 @@ function juguete(datos: Partial<Juguete>): Juguete {
 
 describe('JuguetesService', () => {
   let servicio: JuguetesService;
-  const repositorio = { find: vi.fn(), findOne: vi.fn(), findOneBy: vi.fn() };
+  const repositorio = {
+    find: vi.fn(),
+    findOne: vi.fn(),
+    findOneBy: vi.fn(),
+    create: vi.fn(),
+    save: vi.fn(),
+    update: vi.fn(),
+  };
 
   beforeEach(async () => {
-    repositorio.find.mockReset();
-    repositorio.findOne.mockReset();
-    repositorio.findOneBy.mockReset();
+    for (const metodo of Object.values(repositorio)) metodo.mockReset();
+    repositorio.create.mockImplementation((datos: Partial<Juguete>) => datos);
     const modulo: TestingModule = await Test.createTestingModule({
       providers: [
         JuguetesService,
@@ -289,6 +303,115 @@ describe('JuguetesService', () => {
           mensaje: 'Este juguete está agotado',
         },
       ]);
+    });
+  });
+
+  describe('registrar y editar (HU-12)', () => {
+    const datos = {
+      nombre: 'Cuy de peluche Ñuñu',
+      descripcion: 'Peluche suave de cuy andino.',
+      precio: 39.9,
+      imagenUrl: 'https://placehold.co/600x400?text=Cuy',
+      categoriaId: 2,
+      edadMinima: 0,
+      edadMaxima: 5,
+      stock: 12,
+    } satisfies RegistrarJugueteDto;
+    /** Error que lanza pg cuando la categoría no existe (llave foránea). */
+    const sinCategoria = Object.assign(new Error('fk'), { code: '23503' });
+
+    /** Devuelve el error con el que el servicio rechaza la operación. */
+    async function rechazo(operacion: Promise<unknown>): Promise<Error> {
+      try {
+        await operacion;
+      } catch (error) {
+        return error as Error;
+      }
+      throw new Error('Se esperaba un error');
+    }
+
+    it('registra el juguete activo con su stock inicial y lo devuelve con su categoría', async () => {
+      repositorio.save.mockResolvedValue({ ...datos, id: 21 });
+      repositorio.findOne.mockResolvedValue(juguete({ ...datos, id: 21 }));
+
+      const registrado = await servicio.registrar(datos);
+
+      expect(repositorio.save).toHaveBeenCalledWith({ ...datos, activo: true });
+      expect(repositorio.findOne).toHaveBeenCalledWith({
+        where: { id: 21, activo: true },
+        relations: { categoria: true },
+      });
+      expect(registrado).toMatchObject({
+        id: 21,
+        nombre: 'Cuy de peluche Ñuñu',
+      });
+    });
+
+    it('no guarda nada si la edad mínima es mayor que la máxima', async () => {
+      const error = await rechazo(
+        servicio.registrar({ ...datos, edadMinima: 6, edadMaxima: 3 }),
+      );
+
+      expect(error).toBeInstanceOf(BadRequestException);
+      expect((error as BadRequestException).getResponse()).toMatchObject({
+        errores: { edadMinima: EDADES_INVERTIDAS },
+      });
+      expect(repositorio.save).not.toHaveBeenCalled();
+    });
+
+    it('si la categoría ya no existe responde 400 junto al campo categoría', async () => {
+      repositorio.save.mockRejectedValue(sinCategoria);
+
+      const error = await rechazo(servicio.registrar(datos));
+
+      expect(error).toBeInstanceOf(BadRequestException);
+      expect((error as BadRequestException).getResponse()).toMatchObject({
+        errores: { categoriaId: CATEGORIA_INEXISTENTE },
+      });
+    });
+
+    it('edita solo un juguete activo y nunca cambia su stock', async () => {
+      repositorio.update.mockResolvedValue({ affected: 1 });
+      repositorio.findOne.mockResolvedValue(juguete({ id: 4, precio: 42.5 }));
+      const { stock: _stock, ...sinStock } = datos;
+
+      await servicio.editar(4, { ...datos, precio: 42.5 });
+
+      expect(repositorio.update).toHaveBeenCalledWith(
+        { id: 4, activo: true },
+        { ...sinStock, precio: 42.5 },
+      );
+    });
+
+    it('responde 404 si el juguete no existe o ya fue eliminado', async () => {
+      repositorio.update.mockResolvedValue({ affected: 0 });
+
+      const error = await rechazo(servicio.editar(99, datos));
+
+      expect(error).toBeInstanceOf(NotFoundException);
+      expect(error.message).toBe(JUGUETE_NO_ENCONTRADO);
+      expect(repositorio.findOne).not.toHaveBeenCalled();
+    });
+
+    it('responde 404 sin consultar si el id está fuera de rango', async () => {
+      const error = await rechazo(servicio.editar(2_147_483_648, datos));
+
+      expect(error).toBeInstanceOf(NotFoundException);
+      expect(repositorio.update).not.toHaveBeenCalled();
+    });
+
+    it('al editar también rechaza las edades invertidas y la categoría inexistente', async () => {
+      expect(
+        await rechazo(
+          servicio.editar(4, { ...datos, edadMinima: 13, edadMaxima: 8 }),
+        ),
+      ).toBeInstanceOf(BadRequestException);
+
+      repositorio.update.mockRejectedValue(sinCategoria);
+      const error = await rechazo(servicio.editar(4, datos));
+      expect((error as BadRequestException).getResponse()).toMatchObject({
+        errores: { categoriaId: CATEGORIA_INEXISTENTE },
+      });
     });
   });
 

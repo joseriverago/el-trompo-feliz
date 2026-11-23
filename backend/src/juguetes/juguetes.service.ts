@@ -1,11 +1,18 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { type EntityManager, In, MoreThanOrEqual, Repository } from 'typeorm';
+import { REVISA_FORMULARIO } from '../config/pipe-validacion.js';
+import { esViolacionLlaveForanea } from '../database/errores.js';
 import { ID_MAXIMO } from '../database/limites.js';
+import type {
+  GuardarJugueteDto,
+  RegistrarJugueteDto,
+} from './dto/guardar-juguete.dto.js';
 import { Juguete } from './entities/juguete.entity.js';
 import {
   aJugueteCatalogo,
@@ -20,7 +27,10 @@ import {
  */
 const ORDEN_ALFABETICO = new Intl.Collator('es', { sensitivity: 'base' });
 
-const JUGUETE_NO_ENCONTRADO = 'Juguete no encontrado';
+export const JUGUETE_NO_ENCONTRADO = 'Juguete no encontrado';
+export const EDADES_INVERTIDAS =
+  'La edad mínima no puede ser mayor que la máxima';
+export const CATEGORIA_INEXISTENTE = 'Elige una categoría de la lista';
 export const STOCK_INSUFICIENTE =
   'Algunos juguetes ya no tienen stock suficiente';
 
@@ -37,6 +47,33 @@ export interface FaltaStock {
   nombre: string;
   stock: number;
   mensaje: string;
+}
+
+/** 400 con el mensaje junto al campo, igual que los errores del pipe de validación. */
+function errorDeCampo(campo: string, mensaje: string): BadRequestException {
+  return new BadRequestException({
+    statusCode: 400,
+    message: REVISA_FORMULARIO,
+    errores: { [campo]: mensaje },
+  });
+}
+
+/** Un id que no cabe en la columna integer no puede existir: se responde 404 sin consultar. */
+function idValido(id: number): boolean {
+  return Number.isInteger(id) && id >= 1 && id <= ID_MAXIMO;
+}
+
+/** Los datos que se guardan al editar: todos menos el stock, que se cambia en el inventario (HU-13). */
+function datosEditables(datos: GuardarJugueteDto) {
+  return {
+    nombre: datos.nombre,
+    descripcion: datos.descripcion,
+    precio: datos.precio,
+    imagenUrl: datos.imagenUrl,
+    categoriaId: datos.categoriaId,
+    edadMinima: datos.edadMinima,
+    edadMaxima: datos.edadMaxima,
+  };
 }
 
 /** Mensaje cuando se piden más unidades de las que hay, por ejemplo «Solo quedan 3 unidades». */
@@ -65,17 +102,70 @@ export class JuguetesService {
 
   /** Detalle de un juguete activo. Responde 404 si no existe o fue desactivado. */
   async obtenerDetalle(id: number): Promise<JugueteDetalle> {
-    const juguete =
-      id >= 1 && id <= ID_MAXIMO
-        ? await this.juguetes.findOne({
-            where: { id, activo: true },
-            relations: { categoria: true },
-          })
-        : null;
+    return aJugueteDetalle(await this.buscarActivo(id));
+  }
+
+  /**
+   * IAdminCatalogo: registra un juguete nuevo, activo y con su stock inicial (HU-12, criterio 2).
+   * Responde 400 si la edad mínima supera la máxima o si la categoría ya no existe.
+   */
+  async registrar(datos: RegistrarJugueteDto): Promise<Juguete> {
+    this.validarEdades(datos);
+    const nuevo = this.juguetes.create({
+      ...datosEditables(datos),
+      stock: datos.stock,
+      activo: true,
+    });
+    const { id } = await this.guardarConCategoria(() =>
+      this.juguetes.save(nuevo),
+    );
+    return this.buscarActivo(id);
+  }
+
+  /**
+   * IAdminCatalogo: cambia los datos de un juguete activo, sin tocar su stock (HU-12, criterio 3).
+   * Es un UPDATE con la condición «activo»: si otro administrador lo eliminó, responde 404.
+   */
+  async editar(id: number, datos: GuardarJugueteDto): Promise<Juguete> {
+    this.validarEdades(datos);
+    if (!idValido(id)) throw new NotFoundException(JUGUETE_NO_ENCONTRADO);
+    const { affected } = await this.guardarConCategoria(() =>
+      this.juguetes.update({ id, activo: true }, datosEditables(datos)),
+    );
+    if (affected !== 1) throw new NotFoundException(JUGUETE_NO_ENCONTRADO);
+    return this.buscarActivo(id);
+  }
+
+  /** Juguete activo con su categoría; 404 si no existe, fue desactivado o el id está fuera de rango. */
+  private async buscarActivo(id: number): Promise<Juguete> {
+    const juguete = idValido(id)
+      ? await this.juguetes.findOne({
+          where: { id, activo: true },
+          relations: { categoria: true },
+        })
+      : null;
     if (!juguete) {
       throw new NotFoundException(JUGUETE_NO_ENCONTRADO);
     }
-    return aJugueteDetalle(juguete);
+    return juguete;
+  }
+
+  private validarEdades(datos: GuardarJugueteDto): void {
+    if (datos.edadMinima > datos.edadMaxima) {
+      throw errorDeCampo('edadMinima', EDADES_INVERTIDAS);
+    }
+  }
+
+  /** Si la categoría elegida ya no existe (falla la llave foránea), responde 400 junto al campo. */
+  private async guardarConCategoria<T>(guardar: () => Promise<T>): Promise<T> {
+    try {
+      return await guardar();
+    } catch (error) {
+      if (esViolacionLlaveForanea(error)) {
+        throw errorDeCampo('categoriaId', CATEGORIA_INEXISTENTE);
+      }
+      throw error;
+    }
   }
 
   /**

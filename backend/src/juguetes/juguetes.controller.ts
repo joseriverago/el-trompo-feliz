@@ -1,12 +1,29 @@
 import {
+  Body,
   Controller,
   Get,
   HttpStatus,
   Param,
   ParseIntPipe,
+  Post,
+  Put,
 } from '@nestjs/common';
-import type { JugueteCatalogo, JugueteDetalle } from './juguete-catalogo.js';
+import { SoloAdministrador } from '../auth/solo-administrador.decorator.js';
+import {
+  GuardarJugueteDto,
+  RegistrarJugueteDto,
+} from './dto/guardar-juguete.dto.js';
+import {
+  aJugueteDetalle,
+  type JugueteCatalogo,
+  type JugueteDetalle,
+} from './juguete-catalogo.js';
 import { JuguetesService } from './juguetes.service.js';
+
+/** Un id que no es número responde 404, como un juguete que no existe. */
+const ID_JUGUETE = new ParseIntPipe({
+  errorHttpStatusCode: HttpStatus.NOT_FOUND,
+});
 
 @Controller('juguetes')
 export class JuguetesController {
@@ -18,15 +35,26 @@ export class JuguetesController {
     return this.juguetesService.listarCatalogo();
   }
 
-  /** Detalle público de un juguete. Un id que no es número también responde 404. */
+  /** Detalle público de un juguete. */
   @Get(':id')
-  obtenerDetalle(
-    @Param(
-      'id',
-      new ParseIntPipe({ errorHttpStatusCode: HttpStatus.NOT_FOUND }),
-    )
-    id: number,
-  ): Promise<JugueteDetalle> {
+  obtenerDetalle(@Param('id', ID_JUGUETE) id: number): Promise<JugueteDetalle> {
     return this.juguetesService.obtenerDetalle(id);
+  }
+
+  /** Registra un juguete con su stock inicial (HU-12). Solo el administrador: 201. */
+  @Post()
+  @SoloAdministrador()
+  async registrar(@Body() datos: RegistrarJugueteDto): Promise<JugueteDetalle> {
+    return aJugueteDetalle(await this.juguetesService.registrar(datos));
+  }
+
+  /** Cambia los datos de un juguete, sin su stock (HU-12). Solo el administrador. */
+  @Put(':id')
+  @SoloAdministrador()
+  async editar(
+    @Param('id', ID_JUGUETE) id: number,
+    @Body() datos: GuardarJugueteDto,
+  ): Promise<JugueteDetalle> {
+    return aJugueteDetalle(await this.juguetesService.editar(id, datos));
   }
 }
