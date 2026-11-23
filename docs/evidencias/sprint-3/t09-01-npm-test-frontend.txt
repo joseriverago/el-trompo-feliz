@@ -1,0 +1,48 @@
+
+ RUN  v5.1.1 frontend
+
+ ✓ src/lib/auth.test.ts > validarRegistro (HU-03) > acepta un nombre con tildes y eñes, un correo válido y una contraseña de 8 o más caracteres 5ms
+ ✓ src/lib/auth.test.ts > validarRegistro (HU-03) > con todo vacío pide los 3 datos 1ms
+ ✓ src/lib/auth.test.ts > validarRegistro (HU-03) > un nombre con solo espacios cuenta como vacío 1ms
+ ✓ src/lib/auth.test.ts > validarRegistro (HU-03) > acepta el correo con espacios alrededor, igual que la API 1ms
+ ✓ src/lib/auth.test.ts > validarRegistro (HU-03) > rechaza el correo «begona» 0ms
+ ✓ src/lib/auth.test.ts > validarRegistro (HU-03) > rechaza el correo «begona@correo» 0ms
+ ✓ src/lib/auth.test.ts > validarRegistro (HU-03) > rechaza el correo «begona @correo.pe» 0ms
+ ✓ src/lib/auth.test.ts > validarRegistro (HU-03) > rechaza el correo «@correo.pe» 0ms
+ ✓ src/lib/auth.test.ts > validarRegistro (HU-03) > pide al menos 8 caracteres de contraseña y como máximo 72 1ms
+ ✓ src/lib/auth.test.ts > validarRegistro (HU-03) > limita el nombre a 100 caracteres y el correo a 150 1ms
+ ✓ src/lib/auth.test.ts > validarInicioSesion (HU-04) > solo pide el correo con forma de correo y la contraseña 1ms
+ ✓ src/lib/pagos.test.ts > formatearNumeroTarjeta > agrupa de 4 en 4 mientras se escribe y no pasa de 16 dígitos 5ms
+ ✓ src/lib/pagos.test.ts > formatearVencimiento > agrega la barra después del mes al escribir, pero no al borrar 1ms
+ ✓ src/lib/pagos.test.ts > validarTarjeta (HU-09) > acepta una tarjeta de 16 dígitos con titular con tildes, vencimiento futuro y CVV de 3 dígitos 2ms
+ ✓ src/lib/pagos.test.ts > validarTarjeta (HU-09) > con todo vacío pide los 4 datos 1ms
+ ✓ src/lib/pagos.test.ts > validarTarjeta (HU-09) > pide 16 dígitos en el número 1ms
+ ✓ src/lib/pagos.test.ts > validarTarjeta (HU-09) > el titular solo lleva letras, también con tildes y eñes 1ms
+ ✓ src/lib/pagos.test.ts > validarTarjeta (HU-09) > rechaza el vencimiento con otro formato y la tarjeta vencida; el mes actual todavía vale 1ms
+ ✓ src/lib/pagos.test.ts > validarTarjeta (HU-09) > pide un CVV de 3 dígitos 0ms
+ ✓ src/lib/pedidos.test.ts > soloDigitos > quita espacios y guiones del teléfono 5ms
+ ✓ src/lib/pedidos.test.ts > validarEntrega (HU-08) > acepta una entrega en Lima con el teléfono escrito con espacios y sin referencia 2ms
+ ✓ src/lib/pedidos.test.ts > validarEntrega (HU-08) > con todo vacío pide los 4 datos obligatorios; la referencia es opcional 1ms
+ ✓ src/lib/pedidos.test.ts > validarEntrega (HU-08) > rechaza el teléfono «98765432»: debe tener 9 dígitos 1ms
+ ✓ src/lib/pedidos.test.ts > validarEntrega (HU-08) > rechaza el teléfono «9876543210»: debe tener 9 dígitos 1ms
+ ✓ src/lib/pedidos.test.ts > validarEntrega (HU-08) > rechaza el teléfono «987 654 32a»: debe tener 9 dígitos 0ms
+ ✓ src/lib/pedidos.test.ts > validarEntrega (HU-08) > limita la longitud de cada campo, como la API 1ms
+ ✓ src/components/formulario-entrega.test.tsx > FormularioEntrega (HU-08) > propone el nombre del cliente como quien recibe 76ms
+ ✓ src/components/formulario-registro.test.tsx > FormularioRegistro (HU-03) > con los campos vacíos muestra un mensaje en cada uno, lleva el foco al nombre y no llama a la API 254ms
+ ✓ src/components/formulario-entrega.test.tsx > FormularioEntrega (HU-08) > sin teléfono, dirección ni distrito muestra un mensaje en cada campo y no genera el pedido 187ms
+ ✓ src/components/formulario-pago.test.tsx > FormularioPago (HU-09) > da formato al número y al vencimiento mientras se escriben, y el CVV solo acepta 3 dígitos 552ms
+ ✓ src/components/formulario-pago.test.tsx > FormularioPago (HU-09) > con los campos vacíos muestra un mensaje en cada uno y no envía el pago 96ms
+ ✓ src/components/formulario-registro.test.tsx > FormularioRegistro (HU-03) > avisa del correo inválido y de la contraseña corta; el aviso desaparece al corregir el campo 651ms
+ ✓ src/components/formulario-entrega.test.tsx > FormularioEntrega (HU-08) > avisa si el teléfono no tiene 9 dígitos 785ms
+ ✓ src/components/formulario-pago.test.tsx > FormularioPago (HU-09) > no envía una tarjeta vencida 735ms
+ ✓ src/components/formulario-registro.test.tsx > FormularioRegistro (HU-03) > con datos válidos crea la cuenta y lleva al catálogo 949ms
+ ✓ src/components/formulario-pago.test.tsx > FormularioPago (HU-09) > con una tarjeta válida paga el pedido y avisa a la página 732ms
+ ✓ src/components/formulario-entrega.test.tsx > FormularioEntrega (HU-08) > con datos válidos genera el pedido con POST /pedidos y lo entrega a la página 985ms
+ ✓ src/components/formulario-pago.test.tsx > FormularioPago (HU-09) > si la API rechaza la tarjeta (402), muestra «Pago rechazado» 723ms
+ ✓ src/components/formulario-registro.test.tsx > FormularioRegistro (HU-03) > si el correo ya tiene cuenta (409), muestra el mensaje de la API en el campo Correo 861ms
+
+ Test Files  6 passed (6)
+      Tests  39 passed (39)
+   Start at  20:11:22
+   Duration  10.43s (environment 59%, setup 20%, tests 16%, import 5%, transform 1%)
+
