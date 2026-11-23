@@ -2,98 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { EtiquetaEstado } from "@/components/etiqueta-estado";
+import { DatosPedido } from "@/components/datos-pedido";
 import { FormularioPago } from "@/components/formulario-pago";
 import { BOTON_PRINCIPAL } from "@/lib/estilos";
 import { formatearPrecio } from "@/lib/juguetes";
 import type { Pago } from "@/lib/pagos";
-import { obtenerPedido, type LecturaPedido, type Pedido } from "@/lib/pedidos";
-import { borrarSesion } from "@/lib/sesion";
+import type { Pedido } from "@/lib/pedidos";
 import { useSesionObligatoria } from "@/lib/sesion-obligatoria";
-
-/** 987654321 → 987 654 321, más fácil de leer. */
-function formatearTelefono(telefono: string): string {
-  return telefono.replace(/^(\d{3})(\d{3})(\d{3})$/, "$1 $2 $3");
-}
-
-function DatosDelPedido({ pedido }: { pedido: Pedido }) {
-  const { entrega } = pedido;
-  const unidades = pedido.unidades === 1 ? "1 unidad" : `${pedido.unidades} unidades`;
-  return (
-    <>
-      <dl className="mt-6 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-zinc-200 px-4 py-3 dark:border-zinc-800">
-          <dt className="text-xs text-zinc-500 dark:text-zinc-400">Número de pedido</dt>
-          <dd className="mt-1 font-mono text-lg font-bold">{pedido.numero}</dd>
-        </div>
-        <div className="rounded-2xl border border-zinc-200 px-4 py-3 dark:border-zinc-800">
-          <dt className="text-xs text-zinc-500 dark:text-zinc-400">Estado</dt>
-          <dd className="mt-1">
-            <EtiquetaEstado estado={pedido.estado} />
-          </dd>
-        </div>
-        <div className="rounded-2xl border border-zinc-200 px-4 py-3 dark:border-zinc-800">
-          <dt className="text-xs text-zinc-500 dark:text-zinc-400">
-            {pedido.estado === "PENDIENTE" ? "Total a pagar" : "Total pagado"}
-          </dt>
-          <dd className="mt-1 text-lg font-bold tabular-nums">{formatearPrecio(pedido.total)}</dd>
-        </div>
-      </dl>
-
-      <div className="mt-8 grid gap-8 sm:grid-cols-2">
-        <section aria-labelledby="titulo-juguetes">
-          <h2 id="titulo-juguetes" className="font-semibold">
-            Juguetes ({unidades})
-          </h2>
-          <ul className="mt-3 divide-y divide-zinc-200 border-y border-zinc-200 text-sm dark:divide-zinc-800 dark:border-zinc-800">
-            {pedido.detalles.map((detalle) => (
-              <li key={detalle.jugueteId} className="flex items-start justify-between gap-3 py-2.5">
-                <span>
-                  <span className="font-medium">{detalle.nombre}</span>
-                  <span className="block text-zinc-600 dark:text-zinc-400">
-                    {detalle.cantidad} × {formatearPrecio(detalle.precioUnitario)}
-                  </span>
-                </span>
-                <span className="font-semibold tabular-nums">{formatearPrecio(detalle.subtotal)}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-3 flex justify-between font-semibold">
-            Total <span className="tabular-nums">{formatearPrecio(pedido.total)}</span>
-          </p>
-        </section>
-
-        <section aria-labelledby="titulo-entrega">
-          <h2 id="titulo-entrega" className="font-semibold">
-            Entrega
-          </h2>
-          <dl className="mt-3 flex flex-col gap-2 text-sm">
-            <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">Recibe</dt>
-              <dd className="font-medium">{entrega.destinatario}</dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">Teléfono</dt>
-              <dd className="font-medium">{formatearTelefono(entrega.telefono)}</dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">Dirección</dt>
-              <dd className="font-medium">
-                {entrega.direccion}, {entrega.distrito}
-              </dd>
-            </div>
-            {entrega.referencia && (
-              <div>
-                <dt className="text-zinc-500 dark:text-zinc-400">Referencia</dt>
-                <dd className="font-medium">{entrega.referencia}</dd>
-              </div>
-            )}
-          </dl>
-        </section>
-      </div>
-    </>
-  );
-}
+import { useLecturaPedido } from "@/lib/usar-pedido";
 
 /** Confirmación del pago (HU-09, criterio 1): recibe el foco para que se lea apenas aparece. */
 function ConfirmacionPago({ pedido, pago }: { pedido: Pedido; pago: Pago | null }) {
@@ -128,29 +44,9 @@ function ConfirmacionPago({ pedido, pago }: { pedido: Pedido; pago: Pago | null 
 export function VistaPago({ numero }: { numero: string }) {
   const sesion = useSesionObligatoria(`/pedidos/${encodeURIComponent(numero)}/pago`);
   const token = sesion?.token;
-  const [lectura, setLectura] = useState<LecturaPedido | "fallo" | null>(null);
-  const [intento, setIntento] = useState(0);
+  const { lectura, setLectura, releer } = useLecturaPedido(token, numero);
   /** El pago recién aprobado en esta página, para mostrar el monto y los últimos 4 dígitos. */
   const [pago, setPago] = useState<Pago | null>(null);
-
-  function releer() {
-    setLectura(null);
-    setIntento((anterior) => anterior + 1);
-  }
-
-  useEffect(() => {
-    if (!token) return;
-    const controlador = new AbortController();
-    obtenerPedido(token, numero, controlador.signal)
-      .then((leida) => {
-        if (leida.tipo === "sesion-vencida") borrarSesion();
-        else setLectura(leida);
-      })
-      .catch(() => {
-        if (!controlador.signal.aborted) setLectura("fallo");
-      });
-    return () => controlador.abort();
-  }, [token, numero, intento]);
 
   if (!token || lectura === null) {
     return (
@@ -192,7 +88,7 @@ export function VistaPago({ numero }: { numero: string }) {
     return (
       <>
         <ConfirmacionPago pedido={pedido} pago={pago} />
-        <DatosDelPedido pedido={pedido} />
+        <DatosPedido pedido={pedido} />
         <div className="mt-8">
           <Link href="/" className={BOTON_PRINCIPAL}>
             Seguir comprando
@@ -211,7 +107,7 @@ export function VistaPago({ numero }: { numero: string }) {
           confirmar tu compra.
         </p>
       </div>
-      <DatosDelPedido pedido={pedido} />
+      <DatosPedido pedido={pedido} />
       <FormularioPago
         token={token}
         numero={pedido.numero}
