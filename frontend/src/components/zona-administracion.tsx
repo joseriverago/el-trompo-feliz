@@ -8,7 +8,10 @@ import { BOTON_PRINCIPAL } from "@/lib/estilos";
 import { useSesionObligatoria } from "@/lib/sesion-obligatoria";
 
 /** Secciones de «Administración»; cada historia agrega la suya. */
-const SECCIONES = [{ ruta: "/admin/juguetes", nombre: "Juguetes" }];
+const SECCIONES = [
+  { ruta: "/admin/juguetes", nombre: "Juguetes" },
+  { ruta: "/admin/inventario", nombre: "Inventario" },
+];
 
 function NavegacionAdministracion() {
   const ruta = usePathname();

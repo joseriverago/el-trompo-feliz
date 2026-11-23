@@ -158,3 +158,44 @@ export async function guardarJuguete(token: string, datos: DatosJuguete, id?: nu
   }
   throw new Error(`La API respondió ${respuesta.status}`);
 }
+
+/** Con 5 unidades o menos, el inventario resalta el juguete como «Stock bajo» (HU-13). */
+export const STOCK_BAJO = 5;
+
+export function tieneStockBajo(stock: number): boolean {
+  return stock <= STOCK_BAJO;
+}
+
+/** Valida la cantidad del inventario: un entero de 0 a 100000. Devuelve el mensaje o null. */
+export function validarStock(texto: string): string | null {
+  const valor = texto.trim();
+  if (!valor) return "Ingresa el stock";
+  if (!/^\d+$/.test(valor)) return STOCK_VALIDO;
+  if (Number(valor) > 100_000) return "El stock puede ser hasta 100000 unidades";
+  return null;
+}
+
+export type ResultadoStock =
+  | { tipo: "listo"; juguete: JugueteDetalle }
+  | { tipo: "datos-invalidos"; mensaje: string }
+  | { tipo: "no-encontrado" }
+  | { tipo: "sin-permiso" }
+  | { tipo: "sesion-vencida" };
+
+/** PATCH /juguetes/:id/stock: fija el stock con la cantidad que hay en la tienda (HU-13). */
+export async function actualizarStock(token: string, id: number, stock: number): Promise<ResultadoStock> {
+  const respuesta = await fetch(`${API_URL}/juguetes/${id}/stock`, {
+    method: "PATCH",
+    headers: cabecerasAdmin(token),
+    body: JSON.stringify({ stock }),
+  });
+  if (respuesta.ok) return { tipo: "listo", juguete: (await respuesta.json()) as JugueteDetalle };
+  if (respuesta.status === 401) return { tipo: "sesion-vencida" };
+  if (respuesta.status === 403) return { tipo: "sin-permiso" };
+  if (respuesta.status === 404) return { tipo: "no-encontrado" };
+  if (respuesta.status === 400) {
+    const cuerpo = (await respuesta.json().catch(() => ({}))) as { errores?: { stock?: string } };
+    return { tipo: "datos-invalidos", mensaje: cuerpo.errores?.stock ?? STOCK_VALIDO };
+  }
+  throw new Error(`La API respondió ${respuesta.status}`);
+}

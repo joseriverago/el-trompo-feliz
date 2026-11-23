@@ -237,7 +237,11 @@ export function FormularioJuguete({ token, categorias, juguete, onGuardado }: Pr
       ) : (
         <p className="self-end rounded-lg bg-zinc-100 px-4 py-3 text-sm text-zinc-700 sm:col-span-2 dark:bg-zinc-800 dark:text-zinc-300">
           Stock actual: <strong>{juguete.stock === 1 ? "1 unidad" : `${juguete.stock} unidades`}</strong>. El stock no se
-          cambia aquí, para no pisar las ventas que ocurran mientras editas: se actualiza en el inventario.
+          cambia aquí, para no pisar las ventas que ocurran mientras editas: se actualiza en el{" "}
+          <Link href="/admin/inventario" className={ENLACE}>
+            inventario
+          </Link>
+          .
         </p>
       )}
 
