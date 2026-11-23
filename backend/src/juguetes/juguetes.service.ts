@@ -150,6 +150,20 @@ export class JuguetesService {
     return this.buscarActivo(id);
   }
 
+  /**
+   * IAdminCatalogo: «eliminar» un juguete lo desactiva (activo = falso) y no borra la fila (HU-20):
+   * sale del catálogo y del carrito, y los pedidos anteriores conservan sus líneas. 404 si no existe
+   * o ya estaba eliminado (por ejemplo, otro administrador lo eliminó antes).
+   */
+  async desactivar(id: number): Promise<void> {
+    if (!idValido(id)) throw new NotFoundException(JUGUETE_NO_ENCONTRADO);
+    const { affected } = await this.juguetes.update(
+      { id, activo: true },
+      { activo: false },
+    );
+    if (affected !== 1) throw new NotFoundException(JUGUETE_NO_ENCONTRADO);
+  }
+
   /** Juguete activo con su categoría; 404 si no existe, fue desactivado o el id está fuera de rango. */
   private async buscarActivo(id: number): Promise<Juguete> {
     const juguete = idValido(id)

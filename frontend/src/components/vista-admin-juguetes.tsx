@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { DialogoConfirmacion } from "@/components/dialogo-confirmacion";
+import { eliminarJuguete, MENSAJE_SIN_ACCESO, PREGUNTA_ELIMINAR } from "@/lib/admin-juguetes";
 import { BOTON_PRINCIPAL, ENLACE } from "@/lib/estilos";
 import { formatearPrecio, obtenerCatalogo, type JugueteCatalogo } from "@/lib/juguetes";
+import { borrarSesion, useSesion } from "@/lib/sesion";
 
 interface Props {
   /** Id del juguete recién registrado o editado: se resalta y se avisa «Juguete guardado». */
@@ -12,12 +15,42 @@ interface Props {
 
 /**
  * «Administración > Juguetes» (HU-12, criterio 1): la lista de juguetes con su nombre, categoría,
- * precio y stock, el botón «Nuevo juguete» y «Editar» en cada uno. Usa la ruta pública del catálogo,
- * que solo devuelve los juguetes activos.
+ * precio y stock, el botón «Nuevo juguete», y «Editar» y «Eliminar» en cada uno (HU-20). Usa la ruta
+ * pública del catálogo, que solo devuelve los juguetes activos.
  */
 export function VistaAdminJuguetes({ guardadoId }: Props) {
+  const token = useSesion()?.token;
   const [juguetes, setJuguetes] = useState<JugueteCatalogo[] | "fallo" | null>(null);
   const [intento, setIntento] = useState(0);
+  const [porEliminar, setPorEliminar] = useState<JugueteCatalogo | null>(null);
+  const [eliminando, setEliminando] = useState(false);
+  const [aviso, setAviso] = useState<{ tipo: "listo" | "error"; texto: string } | null>(null);
+
+  /** HU-20: tras confirmar, la API desactiva el juguete y la fila desaparece de la lista. */
+  async function confirmarEliminar() {
+    if (!porEliminar || !token) return;
+    setEliminando(true);
+    try {
+      const resultado = await eliminarJuguete(token, porEliminar.id);
+      if (resultado.tipo === "listo" || resultado.tipo === "no-encontrado") {
+        const id = porEliminar.id;
+        setJuguetes((anteriores) => (Array.isArray(anteriores) ? anteriores.filter((juguete) => juguete.id !== id) : anteriores));
+        setAviso(
+          resultado.tipo === "listo"
+            ? { tipo: "listo", texto: `Juguete eliminado: ${porEliminar.nombre}. Ya no aparece en el catálogo.` }
+            : { tipo: "error", texto: `«${porEliminar.nombre}» ya había sido eliminado por otro administrador.` },
+        );
+      } else if (resultado.tipo === "sin-permiso") {
+        setAviso({ tipo: "error", texto: MENSAJE_SIN_ACCESO });
+      } else {
+        borrarSesion();
+      }
+    } catch {
+      setAviso({ tipo: "error", texto: "No pudimos conectar con la tienda. Inténtalo de nuevo en unos segundos." });
+    }
+    setEliminando(false);
+    setPorEliminar(null);
+  }
 
   useEffect(() => {
     const controlador = new AbortController();
@@ -47,7 +80,20 @@ export function VistaAdminJuguetes({ guardadoId }: Props) {
         </Link>
       </div>
 
-      {guardado && (
+      {aviso && (
+        <p
+          role={aviso.tipo === "listo" ? "status" : "alert"}
+          className={`mt-5 rounded-lg border px-4 py-3 text-sm ${
+            aviso.tipo === "listo"
+              ? "border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-200"
+              : "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
+          }`}
+        >
+          {aviso.texto}
+        </p>
+      )}
+
+      {guardado && !aviso && (
         <p
           role="status"
           className="mt-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-200"
@@ -121,15 +167,43 @@ export function VistaAdminJuguetes({ guardadoId }: Props) {
                     {juguete.agotado ? <span className="font-semibold text-red-600 dark:text-red-400">Agotado</span> : juguete.stock}
                   </td>
                   <td className="py-3 text-right">
-                    <Link href={`/admin/juguetes/${juguete.id}`} className={ENLACE} aria-label={`Editar ${juguete.nombre}`}>
-                      Editar
-                    </Link>
+                    <div className="flex justify-end gap-4">
+                      <Link href={`/admin/juguetes/${juguete.id}`} className={ENLACE} aria-label={`Editar ${juguete.nombre}`}>
+                        Editar
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAviso(null);
+                          setPorEliminar(juguete);
+                        }}
+                        aria-label={`Eliminar ${juguete.nombre}`}
+                        className="font-medium text-red-600 hover:underline dark:text-red-400"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {porEliminar && (
+        <DialogoConfirmacion
+          titulo={PREGUNTA_ELIMINAR}
+          textoConfirmar="Eliminar"
+          ocupado={eliminando}
+          onConfirmar={confirmarEliminar}
+          onCancelar={() => setPorEliminar(null)}
+        >
+          <p>
+            <strong className="text-zinc-900 dark:text-zinc-100">{porEliminar.nombre}</strong> ya no se podrá comprar. Los
+            pedidos anteriores conservan su nombre, cantidad y precio.
+          </p>
+        </DialogoConfirmacion>
       )}
     </section>
   );

@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   HttpStatus,
   Param,
   ParseIntPipe,
@@ -70,5 +72,13 @@ export class JuguetesController {
     return aJugueteDetalle(
       await this.juguetesService.actualizarStock(id, datos.stock),
     );
+  }
+
+  /** Elimina (desactiva) un juguete (HU-20). Solo el administrador: 204 sin contenido. */
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @SoloAdministrador()
+  eliminar(@Param('id', ID_JUGUETE) id: number): Promise<void> {
+    return this.juguetesService.desactivar(id);
   }
 }

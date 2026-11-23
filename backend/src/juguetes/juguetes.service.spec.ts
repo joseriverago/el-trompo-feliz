@@ -459,6 +459,46 @@ describe('JuguetesService', () => {
     });
   });
 
+  describe('desactivar (HU-20)', () => {
+    it('desactiva el juguete activo en vez de borrarlo', async () => {
+      repositorio.update.mockResolvedValue({ affected: 1 });
+
+      await servicio.desactivar(14);
+
+      expect(repositorio.update).toHaveBeenCalledWith(
+        { id: 14, activo: true },
+        { activo: false },
+      );
+    });
+
+    it('responde 404 si no existe o ya estaba eliminado', async () => {
+      repositorio.update.mockResolvedValue({ affected: 0 });
+
+      await expect(servicio.desactivar(14)).rejects.toThrow(NotFoundException);
+    });
+
+    it('responde 404 sin consultar si el id está fuera de rango', async () => {
+      await expect(servicio.desactivar(-1)).rejects.toThrow(NotFoundException);
+      expect(repositorio.update).not.toHaveBeenCalled();
+    });
+
+    it('un juguete desactivado ya no se puede agregar al carrito ni ver en detalle', async () => {
+      repositorio.findOneBy.mockResolvedValue(null);
+      repositorio.findOne.mockResolvedValue(null);
+
+      await expect(servicio.verificarStock(14, 1)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(servicio.obtenerDetalle(14)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repositorio.findOneBy).toHaveBeenCalledWith({
+        id: 14,
+        activo: true,
+      });
+    });
+  });
+
   describe('mensajeSinStock', () => {
     it('usa singular, plural y «agotado» según las unidades', () => {
       expect(mensajeSinStock(5)).toBe('Solo quedan 5 unidades');

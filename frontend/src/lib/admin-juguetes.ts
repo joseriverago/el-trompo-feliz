@@ -199,3 +199,20 @@ export async function actualizarStock(token: string, id: number, stock: number):
   }
   throw new Error(`La API respondió ${respuesta.status}`);
 }
+
+export const PREGUNTA_ELIMINAR = "¿Eliminar este juguete? Dejará de aparecer en el catálogo.";
+
+export type ResultadoEliminar = { tipo: "listo" } | { tipo: "no-encontrado" } | { tipo: "sin-permiso" } | { tipo: "sesion-vencida" };
+
+/**
+ * DELETE /juguetes/:id (HU-20): la API desactiva el juguete en vez de borrarlo, así los pedidos
+ * anteriores conservan sus datos. «no-encontrado» si otro administrador ya lo eliminó.
+ */
+export async function eliminarJuguete(token: string, id: number): Promise<ResultadoEliminar> {
+  const respuesta = await fetch(`${API_URL}/juguetes/${id}`, { method: "DELETE", headers: cabecerasAdmin(token) });
+  if (respuesta.ok) return { tipo: "listo" };
+  if (respuesta.status === 401) return { tipo: "sesion-vencida" };
+  if (respuesta.status === 403) return { tipo: "sin-permiso" };
+  if (respuesta.status === 404) return { tipo: "no-encontrado" };
+  throw new Error(`La API respondió ${respuesta.status}`);
+}
