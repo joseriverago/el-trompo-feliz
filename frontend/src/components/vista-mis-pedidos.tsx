@@ -12,25 +12,34 @@ import { useSesionObligatoria } from "@/lib/sesion-obligatoria";
 function FilaPedido({ pedido }: { pedido: PedidoResumen }) {
   const unidades = pedido.unidades === 1 ? "1 juguete" : `${pedido.unidades} juguetes`;
   return (
-    <li className="grid grid-cols-[1fr_auto] items-center gap-x-6 gap-y-1 py-4 sm:grid-cols-[auto_1fr_auto_7rem]">
-      <p className="font-mono font-semibold">{pedido.numero}</p>
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        <time dateTime={pedido.creadoEn} className="block">
-          {formatearFechaPedido(pedido.creadoEn)}
-        </time>
-        {unidades}
-      </p>
-      <p className="font-semibold tabular-nums sm:text-right">{formatearPrecio(pedido.total)}</p>
-      <p className="justify-self-end">
-        <EtiquetaEstado estado={pedido.estado} />
-      </p>
+    <li>
+      {/* HU-11: toda la fila lleva al detalle del pedido. */}
+      <Link
+        href={`/pedidos/${encodeURIComponent(pedido.numero)}`}
+        className="grid grid-cols-[1fr_auto] items-center gap-x-6 gap-y-1 rounded-xl px-2 py-4 transition-colors hover:bg-amber-50 sm:grid-cols-[auto_1fr_auto_7rem_auto] dark:hover:bg-zinc-900"
+      >
+        <span className="font-mono font-semibold">{pedido.numero}</span>
+        <span className="text-sm text-zinc-600 dark:text-zinc-400">
+          <time dateTime={pedido.creadoEn} className="block">
+            {formatearFechaPedido(pedido.creadoEn)}
+          </time>
+          {unidades}
+        </span>
+        <span className="font-semibold tabular-nums sm:text-right">{formatearPrecio(pedido.total)}</span>
+        <span className="justify-self-end">
+          <EtiquetaEstado estado={pedido.estado} />
+        </span>
+        <span aria-hidden="true" className="hidden text-zinc-400 sm:block">
+          ›
+        </span>
+      </Link>
     </li>
   );
 }
 
 /**
  * «Mis pedidos» (HU-10): los pedidos del cliente con su número, fecha, total y estado, del más
- * reciente al más antiguo. La API solo devuelve los del cliente del token. Sin pedidos, muestra
+ * reciente al más antiguo; cada uno lleva a su detalle (HU-11). La API solo devuelve los del cliente del token. Sin pedidos, muestra
  * «Todavía no tienes pedidos» y un enlace al catálogo.
  */
 export function VistaMisPedidos() {
