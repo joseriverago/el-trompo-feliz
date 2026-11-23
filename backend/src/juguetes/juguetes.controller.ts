@@ -5,10 +5,12 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
 } from '@nestjs/common';
 import { SoloAdministrador } from '../auth/solo-administrador.decorator.js';
+import { ActualizarStockDto } from './dto/actualizar-stock.dto.js';
 import {
   GuardarJugueteDto,
   RegistrarJugueteDto,
@@ -56,5 +58,17 @@ export class JuguetesController {
     @Body() datos: GuardarJugueteDto,
   ): Promise<JugueteDetalle> {
     return aJugueteDetalle(await this.juguetesService.editar(id, datos));
+  }
+
+  /** Fija el stock de un juguete (HU-13, «Administración > Inventario»). Solo el administrador. */
+  @Patch(':id/stock')
+  @SoloAdministrador()
+  async actualizarStock(
+    @Param('id', ID_JUGUETE) id: number,
+    @Body() datos: ActualizarStockDto,
+  ): Promise<JugueteDetalle> {
+    return aJugueteDetalle(
+      await this.juguetesService.actualizarStock(id, datos.stock),
+    );
   }
 }

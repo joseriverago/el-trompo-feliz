@@ -136,6 +136,20 @@ export class JuguetesService {
     return this.buscarActivo(id);
   }
 
+  /**
+   * IAdminCatalogo: fija el stock de un juguete activo con la cantidad que contó el
+   * administrador (HU-13). Con 0, el catálogo lo muestra «Agotado». 404 si no existe o fue eliminado.
+   */
+  async actualizarStock(id: number, stock: number): Promise<Juguete> {
+    if (!idValido(id)) throw new NotFoundException(JUGUETE_NO_ENCONTRADO);
+    const { affected } = await this.juguetes.update(
+      { id, activo: true },
+      { stock },
+    );
+    if (affected !== 1) throw new NotFoundException(JUGUETE_NO_ENCONTRADO);
+    return this.buscarActivo(id);
+  }
+
   /** Juguete activo con su categoría; 404 si no existe, fue desactivado o el id está fuera de rango. */
   private async buscarActivo(id: number): Promise<Juguete> {
     const juguete = idValido(id)

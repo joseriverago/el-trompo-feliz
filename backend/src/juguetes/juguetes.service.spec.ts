@@ -415,6 +415,50 @@ describe('JuguetesService', () => {
     });
   });
 
+  describe('actualizarStock (HU-13)', () => {
+    it('fija el stock de un juguete activo y lo devuelve actualizado', async () => {
+      repositorio.update.mockResolvedValue({ affected: 1 });
+      repositorio.findOne.mockResolvedValue(juguete({ id: 5, stock: 3 }));
+
+      const actualizado = await servicio.actualizarStock(5, 3);
+
+      expect(repositorio.update).toHaveBeenCalledWith(
+        { id: 5, activo: true },
+        { stock: 3 },
+      );
+      expect(actualizado.stock).toBe(3);
+    });
+
+    it('acepta 0: el juguete queda agotado en el catálogo', async () => {
+      repositorio.update.mockResolvedValue({ affected: 1 });
+      repositorio.findOne.mockResolvedValue(juguete({ id: 5, stock: 0 }));
+
+      const actualizado = await servicio.actualizarStock(5, 0);
+
+      expect(repositorio.update).toHaveBeenCalledWith(
+        { id: 5, activo: true },
+        { stock: 0 },
+      );
+      expect(actualizado.stock).toBe(0);
+    });
+
+    it('responde 404 si el juguete no existe o fue eliminado', async () => {
+      repositorio.update.mockResolvedValue({ affected: 0 });
+
+      await expect(servicio.actualizarStock(77, 4)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repositorio.findOne).not.toHaveBeenCalled();
+    });
+
+    it('responde 404 sin consultar si el id está fuera de rango', async () => {
+      await expect(servicio.actualizarStock(0, 4)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repositorio.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('mensajeSinStock', () => {
     it('usa singular, plural y «agotado» según las unidades', () => {
       expect(mensajeSinStock(5)).toBe('Solo quedan 5 unidades');
