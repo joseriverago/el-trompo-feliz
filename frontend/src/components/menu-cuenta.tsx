@@ -5,7 +5,7 @@ import { ContadorCarrito } from "@/components/contador-carrito";
 import { useSesion } from "@/lib/sesion";
 
 /**
- * Parte derecha del encabezado: con sesión iniciada, el contador del carrito y el nombre del cliente;
+ * Parte derecha del encabezado: con sesión iniciada, «Mis pedidos», el contador del carrito y el nombre del cliente;
  * sin sesión, los enlaces para entrar o crear una cuenta.
  */
 export function MenuCuenta() {
@@ -18,6 +18,9 @@ export function MenuCuenta() {
     const primerNombre = sesion.usuario.nombre.split(" ")[0];
     return (
       <div className="flex items-center gap-5">
+        <Link href="/pedidos" className="text-sm font-semibold hover:underline">
+          Mis pedidos
+        </Link>
         <ContadorCarrito token={sesion.token} />
         <p className="text-sm" title={sesion.usuario.nombre}>
           Hola, <span className="font-semibold">{primerNombre}</span>

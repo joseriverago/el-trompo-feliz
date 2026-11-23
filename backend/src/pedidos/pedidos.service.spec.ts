@@ -13,7 +13,7 @@ import type { Juguete } from '../juguetes/entities/juguete.entity.js';
 import { JuguetesService } from '../juguetes/juguetes.service.js';
 import { Pedido } from './entities/pedido.entity.js';
 import { EstadoPedido } from './enums/estado-pedido.enum.js';
-import { aPedidoDto } from './pedido-dto.js';
+import { aPedidoDto, aPedidoResumenDto } from './pedido-dto.js';
 import {
   AJUSTAR_CARRITO,
   CARRITO_VACIO,
@@ -58,7 +58,7 @@ const errorUnico = () =>
 describe('PedidosService', () => {
   let servicio: PedidosService;
   let carrito: Carrito;
-  const pedidos = { findOne: vi.fn() };
+  const pedidos = { findOne: vi.fn(), find: vi.fn() };
   const carritoService = { obtenerCarrito: vi.fn(), vaciar: vi.fn() };
   const juguetesService = { verificarStock: vi.fn() };
   /** Gestor de la transacción: create arma la entidad y save le pone id y fecha, como TypeORM. */
@@ -79,6 +79,7 @@ describe('PedidosService', () => {
   beforeEach(async () => {
     carrito = carritoCon([ABACO, 3], [AJEDREZ, 1]);
     pedidos.findOne.mockReset();
+    pedidos.find.mockReset();
     carritoService.obtenerCarrito
       .mockReset()
       .mockImplementation(() => Promise.resolve(carrito));
@@ -294,6 +295,44 @@ describe('PedidosService', () => {
       await expect(intento).rejects.toBeInstanceOf(ConflictException);
       await expect(intento).rejects.toThrow(PEDIDO_YA_PAGADO);
       expect(pedido.estado).toBe(EstadoPedido.PENDIENTE);
+    });
+  });
+
+  describe('listarMisPedidos (HU-10)', () => {
+    it('busca solo los pedidos del cliente del token, del más reciente al más antiguo', async () => {
+      pedidos.find.mockResolvedValue([]);
+
+      await servicio.listarMisPedidos(CLIENTE);
+
+      expect(pedidos.find).toHaveBeenCalledWith({
+        where: { usuarioId: CLIENTE },
+        relations: { detalles: true },
+        order: { creadoEn: 'DESC', id: 'DESC' },
+      });
+    });
+
+    it('cada fila del historial trae número, fecha, total, estado y unidades, sin la entrega', async () => {
+      const pagado = await servicio.generarPedido(CLIENTE, ENTREGA);
+      pagado.estado = EstadoPedido.PAGADO;
+      pedidos.find.mockResolvedValue([pagado]);
+
+      const [fila] = (await servicio.listarMisPedidos(CLIENTE)).map(
+        aPedidoResumenDto,
+      );
+
+      expect(fila).toEqual({
+        numero: pagado.numero,
+        estado: EstadoPedido.PAGADO,
+        total: 134.6,
+        unidades: 4,
+        creadoEn: new Date('2026-11-22'),
+      });
+    });
+
+    it('sin pedidos devuelve una lista vacía', async () => {
+      pedidos.find.mockResolvedValue([]);
+
+      expect(await servicio.listarMisPedidos(CLIENTE)).toEqual([]);
     });
   });
 

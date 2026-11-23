@@ -86,6 +86,18 @@ export class PedidosService {
     }
   }
 
+  /**
+   * Historial del cliente del token (HU-10): solo sus pedidos, del más reciente al más
+   * antiguo. Se cargan las líneas para contar las unidades de cada pedido.
+   */
+  listarMisPedidos(usuarioId: number): Promise<Pedido[]> {
+    return this.pedidos.find({
+      where: { usuarioId },
+      relations: { detalles: true },
+      order: { creadoEn: 'DESC', id: 'DESC' },
+    });
+  }
+
   /** Pedido del cliente del token. Con el número de otro cliente responde 404, igual que si no existiera. */
   async obtenerPedido(usuarioId: number, numero: string): Promise<Pedido> {
     const pedido = await this.pedidos.findOne({

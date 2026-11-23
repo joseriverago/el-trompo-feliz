@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { EtiquetaEstado } from "@/components/etiqueta-estado";
 import { FormularioPago } from "@/components/formulario-pago";
 import { BOTON_PRINCIPAL } from "@/lib/estilos";
 import { formatearPrecio } from "@/lib/juguetes";
 import type { Pago } from "@/lib/pagos";
-import { NOMBRE_ESTADO, obtenerPedido, type EstadoPedido, type LecturaPedido, type Pedido } from "@/lib/pedidos";
+import { obtenerPedido, type LecturaPedido, type Pedido } from "@/lib/pedidos";
 import { borrarSesion } from "@/lib/sesion";
 import { useSesionObligatoria } from "@/lib/sesion-obligatoria";
 
@@ -14,14 +15,6 @@ import { useSesionObligatoria } from "@/lib/sesion-obligatoria";
 function formatearTelefono(telefono: string): string {
   return telefono.replace(/^(\d{3})(\d{3})(\d{3})$/, "$1 $2 $3");
 }
-
-/** Pendiente en ámbar; Pagado y los estados siguientes en verde. */
-const COLOR_ESTADO: Record<EstadoPedido, string> = {
-  PENDIENTE: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
-  PAGADO: "bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-200",
-  ENVIADO: "bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-200",
-  ENTREGADO: "bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-200",
-};
 
 function DatosDelPedido({ pedido }: { pedido: Pedido }) {
   const { entrega } = pedido;
@@ -36,9 +29,7 @@ function DatosDelPedido({ pedido }: { pedido: Pedido }) {
         <div className="rounded-2xl border border-zinc-200 px-4 py-3 dark:border-zinc-800">
           <dt className="text-xs text-zinc-500 dark:text-zinc-400">Estado</dt>
           <dd className="mt-1">
-            <span className={`rounded-full px-3 py-0.5 text-sm font-semibold ${COLOR_ESTADO[pedido.estado]}`}>
-              {NOMBRE_ESTADO[pedido.estado]}
-            </span>
+            <EtiquetaEstado estado={pedido.estado} />
           </dd>
         </div>
         <div className="rounded-2xl border border-zinc-200 px-4 py-3 dark:border-zinc-800">

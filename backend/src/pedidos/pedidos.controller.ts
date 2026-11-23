@@ -3,7 +3,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import type { UsuarioSesion } from '../auth/sesion.js';
 import { UsuarioActual } from '../auth/usuario-actual.decorator.js';
 import { DatosEntregaDto } from './dto/datos-entrega.dto.js';
-import { aPedidoDto, type PedidoDto } from './pedido-dto.js';
+import {
+  aPedidoDto,
+  aPedidoResumenDto,
+  type PedidoDto,
+  type PedidoResumenDto,
+} from './pedido-dto.js';
 import { PedidosService } from './pedidos.service.js';
 
 /**
@@ -30,7 +35,16 @@ export class PedidosController {
     );
   }
 
-  /** Un pedido del cliente por su número, por ejemplo para la página de pago. 404 si no es suyo. */
+  /** «Mis pedidos» (HU-10): los pedidos del cliente del token, del más reciente al más antiguo. */
+  @Get()
+  async listarMios(
+    @UsuarioActual() usuario: UsuarioSesion,
+  ): Promise<PedidoResumenDto[]> {
+    const pedidos = await this.pedidosService.listarMisPedidos(usuario.id);
+    return pedidos.map(aPedidoResumenDto);
+  }
+
+  /** Un pedido del cliente por su número, para su detalle (HU-11) y la página de pago. 404 si no es suyo. */
   @Get(':numero')
   async obtenerMio(
     @UsuarioActual() usuario: UsuarioSesion,
