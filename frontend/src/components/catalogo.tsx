@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BuscadorCatalogo } from "@/components/buscador-catalogo";
 import { TarjetaJuguete } from "@/components/tarjeta-juguete";
-import { obtenerCatalogo, type JugueteCatalogo } from "@/lib/juguetes";
+import { BOTON_PRINCIPAL } from "@/lib/estilos";
+import { consultaCatalogo, obtenerCatalogo, type FiltrosCatalogo, type JugueteCatalogo } from "@/lib/juguetes";
 
 type Estado =
   | { tipo: "cargando" }
@@ -12,28 +14,56 @@ type Estado =
 const CUADRICULA = "grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 
 /**
- * Catálogo de juguetes. Se carga en el navegador para mostrar un aviso mientras
- * la API despierta: en el plan gratuito de Render puede tardar alrededor de un minuto.
+ * Catálogo de juguetes con búsqueda por nombre (HU-16). Se carga en el navegador para mostrar un
+ * aviso mientras la API despierta: en el plan gratuito de Render puede tardar alrededor de un minuto.
  */
 export function Catalogo() {
   const [estado, setEstado] = useState<Estado>({ tipo: "cargando" });
   const [intento, setIntento] = useState(0);
+  const [filtros, setFiltros] = useState<FiltrosCatalogo>({});
 
   useEffect(() => {
     const controlador = new AbortController();
-    obtenerCatalogo(controlador.signal)
+    obtenerCatalogo(controlador.signal, filtros)
       .then((juguetes) => setEstado({ tipo: "listo", juguetes }))
       .catch(() => {
         if (!controlador.signal.aborted) setEstado({ tipo: "error" });
       });
     return () => controlador.abort();
-  }, [intento]);
+  }, [intento, filtros]);
+
+  /** Aplica otra búsqueda; si no cambia nada, no vuelve a pedir el catálogo. */
+  function buscar(nuevos: FiltrosCatalogo) {
+    if (consultaCatalogo(nuevos) === consultaCatalogo(filtros)) return;
+    setEstado({ tipo: "cargando" });
+    setFiltros(nuevos);
+  }
 
   function reintentar() {
     setEstado({ tipo: "cargando" });
     setIntento((anterior) => anterior + 1);
   }
 
+  return (
+    <>
+      <BuscadorCatalogo onBuscar={buscar} />
+      <Resultados
+        estado={estado}
+        filtrando={consultaCatalogo(filtros) !== ""}
+        onReintentar={reintentar}
+      />
+    </>
+  );
+}
+
+interface PropsResultados {
+  estado: Estado;
+  /** Hay una búsqueda aplicada: cambia el mensaje cuando no aparece nada. */
+  filtrando: boolean;
+  onReintentar: () => void;
+}
+
+function Resultados({ estado, filtrando, onReintentar }: PropsResultados) {
   if (estado.tipo === "cargando") {
     return (
       <section className="mt-8" aria-busy="true">
@@ -58,8 +88,8 @@ export function Catalogo() {
         <p className="text-lg font-medium">La tienda no responde en este momento.</p>
         <button
           type="button"
-          onClick={reintentar}
-          className="rounded-full bg-amber-500 px-5 py-2 text-sm font-semibold text-zinc-950 transition-colors hover:bg-amber-400"
+          onClick={onReintentar}
+          className={BOTON_PRINCIPAL}
         >
           Reintentar
         </button>
@@ -69,8 +99,8 @@ export function Catalogo() {
 
   if (estado.juguetes.length === 0) {
     return (
-      <p className="mt-12 text-center text-lg text-zinc-600 dark:text-zinc-400">
-        Por ahora no hay juguetes disponibles
+      <p role="status" className="mt-12 text-center text-lg text-zinc-600 dark:text-zinc-400">
+        {filtrando ? "No encontramos juguetes con ese nombre" : "Por ahora no hay juguetes disponibles"}
       </p>
     );
   }

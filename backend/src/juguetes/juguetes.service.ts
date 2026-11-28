@@ -6,9 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { type EntityManager, In, MoreThanOrEqual, Repository } from 'typeorm';
+import { normalizarTexto } from '../comun/texto.js';
 import { REVISA_FORMULARIO } from '../config/pipe-validacion.js';
 import { esViolacionLlaveForanea } from '../database/errores.js';
 import { ID_MAXIMO } from '../database/limites.js';
+import type { FiltrosCatalogoDto } from './dto/filtros-catalogo.dto.js';
 import type {
   GuardarJugueteDto,
   RegistrarJugueteDto,
@@ -89,13 +91,20 @@ export class JuguetesService {
     private readonly juguetes: Repository<Juguete>,
   ) {}
 
-  /** Juguetes activos con su categoría, ordenados por nombre. Los desactivados no se muestran. */
-  async listarCatalogo(): Promise<JugueteCatalogo[]> {
+  /**
+   * Juguetes activos con su categoría, ordenados por nombre. Los desactivados no se muestran.
+   * Con `nombre`, solo los que lo contienen, sin importar mayúsculas ni tildes (HU-16).
+   */
+  async listarCatalogo(
+    filtros: FiltrosCatalogoDto = {},
+  ): Promise<JugueteCatalogo[]> {
     const juguetes = await this.juguetes.find({
       where: { activo: true },
       relations: { categoria: true },
     });
+    const buscado = normalizarTexto(filtros.nombre ?? '');
     return juguetes
+      .filter((juguete) => normalizarTexto(juguete.nombre).includes(buscado))
       .sort((a, b) => ORDEN_ALFABETICO.compare(a.nombre, b.nombre))
       .map(aJugueteCatalogo);
   }

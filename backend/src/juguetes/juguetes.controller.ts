@@ -10,9 +10,11 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { SoloAdministrador } from '../auth/solo-administrador.decorator.js';
 import { ActualizarStockDto } from './dto/actualizar-stock.dto.js';
+import { FiltrosCatalogoDto } from './dto/filtros-catalogo.dto.js';
 import {
   GuardarJugueteDto,
   RegistrarJugueteDto,
@@ -33,10 +35,12 @@ const ID_JUGUETE = new ParseIntPipe({
 export class JuguetesController {
   constructor(private readonly juguetesService: JuguetesService) {}
 
-  /** Catálogo público: no necesita iniciar sesión. */
+  /** Catálogo público: no necesita iniciar sesión. Admite búsqueda por nombre (HU-16). */
   @Get()
-  listarCatalogo(): Promise<JugueteCatalogo[]> {
-    return this.juguetesService.listarCatalogo();
+  listarCatalogo(
+    @Query() filtros: FiltrosCatalogoDto,
+  ): Promise<JugueteCatalogo[]> {
+    return this.juguetesService.listarCatalogo(filtros);
   }
 
   /** Detalle público de un juguete. */
