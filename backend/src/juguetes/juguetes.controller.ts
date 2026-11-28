@@ -35,7 +35,7 @@ const ID_JUGUETE = new ParseIntPipe({
 export class JuguetesController {
   constructor(private readonly juguetesService: JuguetesService) {}
 
-  /** Catálogo público: no necesita iniciar sesión. Admite búsqueda por nombre (HU-16). */
+  /** Catálogo público: no necesita iniciar sesión. Admite búsqueda (HU-16) y filtros (HU-17). */
   @Get()
   listarCatalogo(
     @Query() filtros: FiltrosCatalogoDto,

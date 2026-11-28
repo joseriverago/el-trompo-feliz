@@ -5,7 +5,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { type EntityManager, In, MoreThanOrEqual, Repository } from 'typeorm';
+import {
+  Between,
+  type EntityManager,
+  type FindOptionsWhere,
+  In,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { normalizarTexto } from '../comun/texto.js';
 import { REVISA_FORMULARIO } from '../config/pipe-validacion.js';
 import { esViolacionLlaveForanea } from '../database/errores.js';
@@ -22,6 +30,7 @@ import {
   type JugueteCatalogo,
   type JugueteDetalle,
 } from './juguete-catalogo.js';
+import { RANGOS_EDAD } from './rangos-edad.js';
 
 /**
  * Orden alfabético en español: «Ábaco» va junto a «Ajedrez». PostgreSQL en Neon
@@ -32,9 +41,38 @@ const ORDEN_ALFABETICO = new Intl.Collator('es', { sensitivity: 'base' });
 export const JUGUETE_NO_ENCONTRADO = 'Juguete no encontrado';
 export const EDADES_INVERTIDAS =
   'La edad mínima no puede ser mayor que la máxima';
+export const PRECIOS_INVERTIDOS =
+  'El precio mínimo no puede ser mayor que el máximo';
 export const CATEGORIA_INEXISTENTE = 'Elige una categoría de la lista';
 export const STOCK_INSUFICIENTE =
   'Algunos juguetes ya no tienen stock suficiente';
+
+/**
+ * Condiciones de la consulta del catálogo (HU-17). La edad coincide cuando el rango elegido se
+ * cruza con la edad recomendada: «de 3 a 8 años» aparece en 3–5 y en 6–8.
+ */
+function condicionesDelCatalogo({
+  categoriaId,
+  edad,
+  precioMin,
+  precioMax,
+}: FiltrosCatalogoDto): FindOptionsWhere<Juguete> {
+  const condiciones: FindOptionsWhere<Juguete> = { activo: true };
+  if (categoriaId !== undefined) condiciones.categoriaId = categoriaId;
+  if (edad) {
+    const [desde, hasta] = RANGOS_EDAD[edad];
+    condiciones.edadMinima = LessThanOrEqual(hasta);
+    condiciones.edadMaxima = MoreThanOrEqual(desde);
+  }
+  if (precioMin !== undefined && precioMax !== undefined) {
+    condiciones.precio = Between(precioMin, precioMax);
+  } else if (precioMin !== undefined) {
+    condiciones.precio = MoreThanOrEqual(precioMin);
+  } else if (precioMax !== undefined) {
+    condiciones.precio = LessThanOrEqual(precioMax);
+  }
+  return condiciones;
+}
 
 /** Unidades de un juguete que se descuentan al aprobarse el pago (HU-09). */
 export interface LineaStock {
@@ -93,13 +131,22 @@ export class JuguetesService {
 
   /**
    * Juguetes activos con su categoría, ordenados por nombre. Los desactivados no se muestran.
-   * Con `nombre`, solo los que lo contienen, sin importar mayúsculas ni tildes (HU-16).
+   * Con `nombre`, solo los que lo contienen, sin importar mayúsculas ni tildes (HU-16). Los
+   * filtros de categoría, edad y precio (HU-17) se cumplen todos a la vez.
    */
   async listarCatalogo(
     filtros: FiltrosCatalogoDto = {},
   ): Promise<JugueteCatalogo[]> {
+    const { precioMin, precioMax } = filtros;
+    if (
+      precioMin !== undefined &&
+      precioMax !== undefined &&
+      precioMin > precioMax
+    ) {
+      throw errorDeCampo('precioMin', PRECIOS_INVERTIDOS);
+    }
     const juguetes = await this.juguetes.find({
-      where: { activo: true },
+      where: condicionesDelCatalogo(filtros),
       relations: { categoria: true },
     });
     const buscado = normalizarTexto(filtros.nombre ?? '');

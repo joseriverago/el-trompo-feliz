@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { BuscadorCatalogo } from "@/components/buscador-catalogo";
 import { TarjetaJuguete } from "@/components/tarjeta-juguete";
 import { BOTON_PRINCIPAL } from "@/lib/estilos";
-import { consultaCatalogo, obtenerCatalogo, type FiltrosCatalogo, type JugueteCatalogo } from "@/lib/juguetes";
+import { consultaCatalogo, mensajeSinResultados, type FiltrosCatalogo } from "@/lib/filtros-catalogo";
+import { obtenerCatalogo, type JugueteCatalogo } from "@/lib/juguetes";
 
 type Estado =
   | { tipo: "cargando" }
@@ -14,7 +15,7 @@ type Estado =
 const CUADRICULA = "grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 
 /**
- * Catálogo de juguetes con búsqueda por nombre (HU-16). Se carga en el navegador para mostrar un
+ * Catálogo de juguetes con búsqueda (HU-16) y filtros (HU-17). Se carga en el navegador para mostrar un
  * aviso mientras la API despierta: en el plan gratuito de Render puede tardar alrededor de un minuto.
  */
 export function Catalogo() {
@@ -49,7 +50,7 @@ export function Catalogo() {
       <BuscadorCatalogo onBuscar={buscar} />
       <Resultados
         estado={estado}
-        filtrando={consultaCatalogo(filtros) !== ""}
+        sinResultados={mensajeSinResultados(filtros)}
         onReintentar={reintentar}
       />
     </>
@@ -58,12 +59,12 @@ export function Catalogo() {
 
 interface PropsResultados {
   estado: Estado;
-  /** Hay una búsqueda aplicada: cambia el mensaje cuando no aparece nada. */
-  filtrando: boolean;
+  /** Mensaje cuando no aparece ningún juguete. */
+  sinResultados: string;
   onReintentar: () => void;
 }
 
-function Resultados({ estado, filtrando, onReintentar }: PropsResultados) {
+function Resultados({ estado, sinResultados, onReintentar }: PropsResultados) {
   if (estado.tipo === "cargando") {
     return (
       <section className="mt-8" aria-busy="true">
@@ -100,7 +101,7 @@ function Resultados({ estado, filtrando, onReintentar }: PropsResultados) {
   if (estado.juguetes.length === 0) {
     return (
       <p role="status" className="mt-12 text-center text-lg text-zinc-600 dark:text-zinc-400">
-        {filtrando ? "No encontramos juguetes con ese nombre" : "Por ahora no hay juguetes disponibles"}
+        {sinResultados}
       </p>
     );
   }
