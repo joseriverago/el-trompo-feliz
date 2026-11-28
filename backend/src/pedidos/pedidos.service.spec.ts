@@ -21,6 +21,7 @@ import {
 } from './pedido-dto.js';
 import {
   AJUSTAR_CARRITO,
+  CAMBIO_NO_PERMITIDO,
   CARRITO_VACIO,
   PEDIDO_NO_ENCONTRADO,
   PEDIDO_YA_PAGADO,
@@ -63,7 +64,7 @@ const errorUnico = () =>
 describe('PedidosService', () => {
   let servicio: PedidosService;
   let carrito: Carrito;
-  const pedidos = { findOne: vi.fn(), find: vi.fn() };
+  const pedidos = { findOne: vi.fn(), find: vi.fn(), update: vi.fn() };
   const carritoService = { obtenerCarrito: vi.fn(), vaciar: vi.fn() };
   const juguetesService = { verificarStock: vi.fn() };
   /** Gestor de la transacción: create arma la entidad y save le pone id y fecha, como TypeORM. */
@@ -400,6 +401,66 @@ describe('PedidosService', () => {
 
       await expect(
         servicio.obtenerParaAdministrador('TF-20261122-000002'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('cambiarEstado (HU-15)', () => {
+    const NUMERO = 'TF-20261122-000001';
+    const pedidoEn = (estado: EstadoPedido) =>
+      Object.assign(new Pedido(), { id: 9, numero: NUMERO, estado });
+
+    beforeEach(() => {
+      pedidos.update.mockReset().mockResolvedValue({ affected: 1 });
+    });
+
+    it.each([
+      [EstadoPedido.PAGADO, EstadoPedido.ENVIADO],
+      [EstadoPedido.ENVIADO, EstadoPedido.ENTREGADO],
+    ])('avanza de %s a %s', async (desde, hasta) => {
+      pedidos.findOne.mockResolvedValue(pedidoEn(desde));
+
+      const pedido = await servicio.cambiarEstado(NUMERO, hasta);
+
+      expect(pedido.estado).toBe(hasta);
+      expect(pedidos.update).toHaveBeenCalledWith(
+        { id: 9, estado: desde },
+        { estado: hasta },
+      );
+    });
+
+    it.each([
+      [EstadoPedido.PENDIENTE, EstadoPedido.ENVIADO],
+      [EstadoPedido.PENDIENTE, EstadoPedido.ENTREGADO],
+      [EstadoPedido.PAGADO, EstadoPedido.ENTREGADO],
+      [EstadoPedido.ENVIADO, EstadoPedido.ENVIADO],
+      [EstadoPedido.ENTREGADO, EstadoPedido.ENVIADO],
+      [EstadoPedido.ENTREGADO, EstadoPedido.ENTREGADO],
+    ])('no permite pasar de %s a %s (409)', async (desde, hasta) => {
+      pedidos.findOne.mockResolvedValue(pedidoEn(desde));
+
+      await expect(servicio.cambiarEstado(NUMERO, hasta)).rejects.toThrow(
+        CAMBIO_NO_PERMITIDO[desde],
+      );
+      expect(pedidos.update).not.toHaveBeenCalled();
+    });
+
+    it('si otro administrador lo cambió a la vez, responde 409 con el estado actual', async () => {
+      pedidos.findOne
+        .mockResolvedValueOnce(pedidoEn(EstadoPedido.PAGADO))
+        .mockResolvedValueOnce(pedidoEn(EstadoPedido.ENVIADO));
+      pedidos.update.mockResolvedValue({ affected: 0 });
+
+      await expect(
+        servicio.cambiarEstado(NUMERO, EstadoPedido.ENVIADO),
+      ).rejects.toThrow(CAMBIO_NO_PERMITIDO[EstadoPedido.ENVIADO]);
+    });
+
+    it('responde 404 si el pedido no existe', async () => {
+      pedidos.findOne.mockResolvedValue(null);
+
+      await expect(
+        servicio.cambiarEstado(NUMERO, EstadoPedido.ENVIADO),
       ).rejects.toThrow(NotFoundException);
     });
   });

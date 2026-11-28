@@ -19,6 +19,16 @@ import { DatosEntrega } from './datos-entrega.js';
 import { DetallePedido } from './detalle-pedido.entity.js';
 
 /**
+ * Pasos que da el administrador (HU-15). Pendiente no aparece porque pasa a Pagado solo con el
+ * pago, y Entregado es el final.
+ */
+const SIGUIENTE_DEL_ADMINISTRADOR: Partial<Record<EstadoPedido, EstadoPedido>> =
+  {
+    [EstadoPedido.PAGADO]: EstadoPedido.ENVIADO,
+    [EstadoPedido.ENVIADO]: EstadoPedido.ENTREGADO,
+  };
+
+/**
  * Pedido de un cliente (HU-08). Se genera Pendiente con los juguetes del carrito;
  * el pago simulado lo pasa a Pagado (HU-09).
  */
@@ -78,6 +88,11 @@ export class Pedido {
     return sumarMontos(
       this.detalles.map((detalle) => detalle.calcularSubtotal()),
     );
+  }
+
+  /** El orden es fijo: un pedido solo avanza al estado siguiente (HU-15). */
+  puedeAvanzarA(estado: EstadoPedido): boolean {
+    return SIGUIENTE_DEL_ADMINISTRADOR[this.estado] === estado;
   }
 
   /** Solo un pedido Pendiente se puede pagar (HU-09). */
