@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../auth/auth.module.js';
 import { CarritoModule } from '../carrito/carrito.module.js';
 import { JuguetesModule } from '../juguetes/juguetes.module.js';
+import { AdminPedidosController } from './admin-pedidos.controller.js';
 import { DetallePedido } from './entities/detalle-pedido.entity.js';
 import { Pedido } from './entities/pedido.entity.js';
 import { PedidosController } from './pedidos.controller.js';
@@ -16,7 +17,7 @@ import { PedidosService } from './pedidos.service.js';
     CarritoModule,
     JuguetesModule,
   ],
-  controllers: [PedidosController],
+  controllers: [PedidosController, AdminPedidosController],
   providers: [PedidosService],
   // IPedidos: Pagos lee el pedido y lo marca Pagado (HU-09).
   exports: [PedidosService],

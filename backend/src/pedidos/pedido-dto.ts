@@ -52,3 +52,22 @@ export function aPedidoDto(pedido: Pedido): PedidoDto {
     })),
   };
 }
+
+/** Fila de GET /admin/pedidos (HU-14): el resumen y el nombre del cliente. */
+export interface PedidoAdminResumenDto extends PedidoResumenDto {
+  cliente: string;
+}
+
+/** Respuesta de GET /admin/pedidos/:numero (HU-14). */
+export interface PedidoAdminDto extends PedidoDto {
+  cliente: string;
+}
+
+/** Solo sale el nombre del cliente: ni su correo ni su contraseña. */
+export function aPedidoAdminResumenDto(pedido: Pedido): PedidoAdminResumenDto {
+  return { ...aPedidoResumenDto(pedido), cliente: pedido.usuario.nombre };
+}
+
+export function aPedidoAdminDto(pedido: Pedido): PedidoAdminDto {
+  return { ...aPedidoDto(pedido), cliente: pedido.usuario.nombre };
+}

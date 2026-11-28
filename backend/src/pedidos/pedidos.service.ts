@@ -98,6 +98,34 @@ export class PedidosService {
     });
   }
 
+  /**
+   * «Administración > Pedidos» (HU-14): los pedidos de todos los clientes, del más reciente
+   * al más antiguo, opcionalmente solo los de un estado.
+   */
+  listarTodos(estado?: EstadoPedido): Promise<Pedido[]> {
+    return this.pedidos.find({
+      where: estado ? { estado } : {},
+      relations: { detalles: true, usuario: true },
+      order: { creadoEn: 'DESC', id: 'DESC' },
+    });
+  }
+
+  /** Cualquier pedido por su número, con su cliente, para el detalle del administrador (HU-14). */
+  async obtenerParaAdministrador(numero: string): Promise<Pedido> {
+    const pedido = await this.pedidos.findOne({
+      where: { numero },
+      relations: { detalles: true, usuario: true },
+      order: { detalles: { id: 'ASC' } },
+    });
+    if (!pedido) {
+      throw new NotFoundException({
+        statusCode: 404,
+        message: PEDIDO_NO_ENCONTRADO,
+      });
+    }
+    return pedido;
+  }
+
   /** Pedido del cliente del token. Con el número de otro cliente responde 404, igual que si no existiera. */
   async obtenerPedido(usuarioId: number, numero: string): Promise<Pedido> {
     const pedido = await this.pedidos.findOne({
