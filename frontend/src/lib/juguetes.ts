@@ -1,4 +1,5 @@
 import { API_URL } from "@/lib/api";
+import { consultaCatalogo, type FiltrosCatalogo } from "@/lib/filtros-catalogo";
 
 /** Juguete tal como lo devuelve GET /juguetes. */
 export interface JugueteCatalogo {
@@ -16,22 +17,6 @@ export interface JugueteCatalogo {
 /** Juguete tal como lo devuelve GET /juguetes/:id. */
 export interface JugueteDetalle extends JugueteCatalogo {
   descripcion: string;
-}
-
-/** Lo que se busca en el catálogo (CU-03). Los campos vacíos no filtran. */
-export interface FiltrosCatalogo {
-  nombre?: string;
-}
-
-/** «?nombre=pelu», o vacío si no hay nada que filtrar. */
-export function consultaCatalogo(filtros: FiltrosCatalogo): string {
-  const parametros = new URLSearchParams();
-  for (const [campo, valor] of Object.entries(filtros)) {
-    const texto = String(valor ?? "").trim();
-    if (texto) parametros.set(campo, texto);
-  }
-  const consulta = parametros.toString();
-  return consulta ? `?${consulta}` : "";
 }
 
 export async function obtenerCatalogo(signal?: AbortSignal, filtros: FiltrosCatalogo = {}): Promise<JugueteCatalogo[]> {

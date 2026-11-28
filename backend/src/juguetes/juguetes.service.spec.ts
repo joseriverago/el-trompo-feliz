@@ -5,14 +5,21 @@ import {
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { type EntityManager, MoreThanOrEqual } from 'typeorm';
+import {
+  Between,
+  type EntityManager,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+} from 'typeorm';
 import type { Categoria } from '../categorias/entities/categoria.entity.js';
 import { Juguete } from './entities/juguete.entity.js';
+import type { FiltrosCatalogoDto } from './dto/filtros-catalogo.dto.js';
 import type { RegistrarJugueteDto } from './dto/guardar-juguete.dto.js';
 import {
   CATEGORIA_INEXISTENTE,
   EDADES_INVERTIDAS,
   JUGUETE_NO_ENCONTRADO,
+  PRECIOS_INVERTIDOS,
   JuguetesService,
   mensajeSinStock,
   STOCK_INSUFICIENTE,
@@ -152,6 +159,70 @@ describe('JuguetesService', () => {
 
     it('con el texto vacío devuelve todo el catálogo', async () => {
       expect(await nombres('')).toHaveLength(3);
+    });
+  });
+
+  describe('filtros del catálogo (HU-17)', () => {
+    const condiciones = async (filtros: FiltrosCatalogoDto) => {
+      repositorio.find.mockResolvedValue([]);
+      await servicio.listarCatalogo(filtros);
+      return (repositorio.find.mock.lastCall as [{ where: object }])[0].where;
+    };
+
+    it('filtra por categoría', async () => {
+      expect(await condiciones({ categoriaId: 2 })).toEqual({
+        activo: true,
+        categoriaId: 2,
+      });
+    });
+
+    it.each([
+      ['0-2', 0, 2],
+      ['3-5', 3, 5],
+      ['6-8', 6, 8],
+      ['9-12', 9, 12],
+      ['13+', 13, 99],
+    ] as const)(
+      'el rango %s trae las edades recomendadas que se cruzan con él',
+      async (edad, desde, hasta) => {
+        expect(await condiciones({ edad })).toEqual({
+          activo: true,
+          edadMinima: LessThanOrEqual(hasta),
+          edadMaxima: MoreThanOrEqual(desde),
+        });
+      },
+    );
+
+    it.each([
+      [{ precioMin: 20 }, MoreThanOrEqual(20)],
+      [{ precioMax: 60 }, LessThanOrEqual(60)],
+      [{ precioMin: 20, precioMax: 60 }, Between(20, 60)],
+      [{ precioMin: 30, precioMax: 30 }, Between(30, 30)],
+    ])('filtra por precio con %o', async (filtros, precio) => {
+      expect(await condiciones(filtros)).toEqual({ activo: true, precio });
+    });
+
+    it('combina todos los filtros a la vez', async () => {
+      expect(
+        await condiciones({ categoriaId: 1, edad: '3-5', precioMax: 60 }),
+      ).toEqual({
+        activo: true,
+        categoriaId: 1,
+        edadMinima: LessThanOrEqual(5),
+        edadMaxima: MoreThanOrEqual(3),
+        precio: LessThanOrEqual(60),
+      });
+    });
+
+    it('con el mínimo mayor que el máximo responde 400 y no consulta', async () => {
+      repositorio.find.mockClear();
+
+      await expect(
+        servicio.listarCatalogo({ precioMin: 60, precioMax: 20 }),
+      ).rejects.toMatchObject({
+        response: { errores: { precioMin: PRECIOS_INVERTIDOS } },
+      });
+      expect(repositorio.find).not.toHaveBeenCalled();
     });
   });
 
