@@ -17,6 +17,16 @@ import { DetallePedido } from './entities/detalle-pedido.entity.js';
 import { Pedido } from './entities/pedido.entity.js';
 import { EstadoPedido } from './enums/estado-pedido.enum.js';
 
+/** Por qué un pedido en cada estado no admite el cambio pedido (HU-15). */
+export const CAMBIO_NO_PERMITIDO: Record<EstadoPedido, string> = {
+  [EstadoPedido.PENDIENTE]:
+    'El pedido está Pendiente: pasa a Pagado solo con el pago del cliente',
+  [EstadoPedido.PAGADO]:
+    'El pedido está Pagado: primero debe marcarse como Enviado',
+  [EstadoPedido.ENVIADO]:
+    'El pedido ya está Enviado: solo puede marcarse como Entregado',
+  [EstadoPedido.ENTREGADO]: 'El pedido está Entregado: ya no cambia de estado',
+};
 export const CARRITO_VACIO =
   'Tu carrito está vacío: agrega juguetes antes de comprar';
 export const AJUSTAR_CARRITO =
@@ -123,6 +133,34 @@ export class PedidosService {
         message: PEDIDO_NO_ENCONTRADO,
       });
     }
+    return pedido;
+  }
+
+  /**
+   * «Administración > Pedidos» (HU-15): avanza el pedido de Pagado a Enviado, o de Enviado a
+   * Entregado; cualquier otro cambio responde 409. El UPDATE solo cambia la fila si el pedido
+   * sigue en el estado leído, así dos cambios a la vez no se pisan.
+   */
+  async cambiarEstado(numero: string, estado: EstadoPedido): Promise<Pedido> {
+    const pedido = await this.obtenerParaAdministrador(numero);
+    if (!pedido.puedeAvanzarA(estado)) {
+      throw new ConflictException({
+        statusCode: 409,
+        message: CAMBIO_NO_PERMITIDO[pedido.estado],
+      });
+    }
+    const { affected } = await this.pedidos.update(
+      { id: pedido.id, estado: pedido.estado },
+      { estado },
+    );
+    if (affected !== 1) {
+      const { estado: actual } = await this.obtenerParaAdministrador(numero);
+      throw new ConflictException({
+        statusCode: 409,
+        message: CAMBIO_NO_PERMITIDO[actual],
+      });
+    }
+    pedido.estado = estado;
     return pedido;
   }
 

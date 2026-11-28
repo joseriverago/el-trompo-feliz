@@ -48,3 +48,39 @@ export async function obtenerPedidoAdmin(token: string, numero: string, signal?:
   if (respuesta.status === 404) return { tipo: "no-encontrado" };
   throw new Error(`La API respondió ${respuesta.status}`);
 }
+
+/** El paso que el administrador puede dar desde cada estado (HU-15). Sin entrada, no hay cambio. */
+export const SIGUIENTE_ESTADO: Partial<Record<EstadoPedido, "ENVIADO" | "ENTREGADO">> = {
+  PAGADO: "ENVIADO",
+  ENVIADO: "ENTREGADO",
+};
+
+export type ResultadoEstado =
+  | { tipo: "listo"; pedido: PedidoAdmin }
+  /** 409: el pedido no admite ese cambio, por ejemplo porque ya cambió. */
+  | { tipo: "no-permitido"; mensaje: string }
+  | { tipo: "no-encontrado" }
+  | { tipo: "sin-permiso" }
+  | { tipo: "sesion-vencida" };
+
+/** PATCH /admin/pedidos/:numero/estado: marca el pedido Enviado o Entregado. */
+export async function cambiarEstadoPedido(
+  token: string,
+  numero: string,
+  estado: "ENVIADO" | "ENTREGADO",
+): Promise<ResultadoEstado> {
+  const respuesta = await fetch(`${API_URL}/admin/pedidos/${encodeURIComponent(numero)}/estado`, {
+    method: "PATCH",
+    headers: cabecerasAdmin(token),
+    body: JSON.stringify({ estado }),
+  });
+  if (respuesta.ok) return { tipo: "listo", pedido: (await respuesta.json()) as PedidoAdmin };
+  if (respuesta.status === 401) return { tipo: "sesion-vencida" };
+  if (respuesta.status === 403) return { tipo: "sin-permiso" };
+  if (respuesta.status === 404) return { tipo: "no-encontrado" };
+  if (respuesta.status === 409) {
+    const cuerpo = (await respuesta.json().catch(() => ({}))) as { message?: string };
+    return { tipo: "no-permitido", mensaje: cuerpo.message ?? "El pedido no admite ese cambio" };
+  }
+  throw new Error(`La API respondió ${respuesta.status}`);
+}

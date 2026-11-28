@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AccionesPedido, type AvisoEstado } from "@/components/acciones-pedido";
 import { DatosPedido } from "@/components/datos-pedido";
 import { MENSAJE_SIN_ACCESO } from "@/lib/admin-juguetes";
 import { obtenerPedidoAdmin, type LecturaPedidoAdmin } from "@/lib/admin-pedidos";
@@ -9,11 +10,15 @@ import { BOTON_PRINCIPAL, ENLACE } from "@/lib/estilos";
 import { formatearFechaPedido } from "@/lib/pedidos";
 import { borrarSesion, useSesion } from "@/lib/sesion";
 
-/** Detalle de un pedido para el administrador (HU-14, criterio 3): juguetes, total y entrega. */
+/**
+ * Detalle de un pedido para el administrador: juguetes, total y entrega (HU-14, criterio 3) y
+ * el botón para avanzar su estado (HU-15).
+ */
 export function VistaAdminPedido({ numero }: { numero: string }) {
   const token = useSesion()?.token;
   const [lectura, setLectura] = useState<LecturaPedidoAdmin | "fallo" | null>(null);
   const [intento, setIntento] = useState(0);
+  const [aviso, setAviso] = useState<AvisoEstado | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -79,6 +84,16 @@ export function VistaAdminPedido({ numero }: { numero: string }) {
             <time dateTime={lectura.pedido.creadoEn}>{formatearFechaPedido(lectura.pedido.creadoEn)}</time>
           </p>
           <DatosPedido pedido={lectura.pedido} />
+          {token && (
+            <AccionesPedido
+              token={token}
+              pedido={lectura.pedido}
+              aviso={aviso}
+              onAviso={setAviso}
+              onCambiado={(pedido) => setLectura({ tipo: "listo", pedido })}
+              onDesactualizado={() => setIntento((anterior) => anterior + 1)}
+            />
+          )}
         </>
       )}
     </section>
