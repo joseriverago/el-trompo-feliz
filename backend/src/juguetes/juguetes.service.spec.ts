@@ -124,6 +124,37 @@ describe('JuguetesService', () => {
     await expect(servicio.listarCatalogo()).resolves.toEqual([]);
   });
 
+  describe('búsqueda por nombre (HU-16)', () => {
+    beforeEach(() => {
+      repositorio.find.mockResolvedValue([
+        juguete({ id: 3, nombre: 'Osito de peluche Bruno' }),
+        juguete({ id: 4, nombre: 'Llama de Peluche andina' }),
+        juguete({ id: 8, nombre: 'Ábaco de colores' }),
+      ]);
+    });
+    const nombres = async (nombre: string) =>
+      (await servicio.listarCatalogo({ nombre })).map((item) => item.nombre);
+
+    it('encuentra los juguetes que contienen el texto, sin importar mayúsculas', async () => {
+      expect(await nombres('PELU')).toEqual([
+        'Llama de Peluche andina',
+        'Osito de peluche Bruno',
+      ]);
+    });
+
+    it('tampoco distingue las tildes', async () => {
+      expect(await nombres('abaco')).toEqual(['Ábaco de colores']);
+    });
+
+    it('sin coincidencias devuelve una lista vacía', async () => {
+      expect(await nombres('robot')).toEqual([]);
+    });
+
+    it('con el texto vacío devuelve todo el catálogo', async () => {
+      expect(await nombres('')).toHaveLength(3);
+    });
+  });
+
   describe('obtenerDetalle', () => {
     it('busca el juguete activo con su categoría', async () => {
       repositorio.findOne.mockResolvedValue(juguete({}));

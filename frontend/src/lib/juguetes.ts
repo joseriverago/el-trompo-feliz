@@ -18,8 +18,24 @@ export interface JugueteDetalle extends JugueteCatalogo {
   descripcion: string;
 }
 
-export async function obtenerCatalogo(signal?: AbortSignal): Promise<JugueteCatalogo[]> {
-  const respuesta = await fetch(`${API_URL}/juguetes`, { signal });
+/** Lo que se busca en el catálogo (CU-03). Los campos vacíos no filtran. */
+export interface FiltrosCatalogo {
+  nombre?: string;
+}
+
+/** «?nombre=pelu», o vacío si no hay nada que filtrar. */
+export function consultaCatalogo(filtros: FiltrosCatalogo): string {
+  const parametros = new URLSearchParams();
+  for (const [campo, valor] of Object.entries(filtros)) {
+    const texto = String(valor ?? "").trim();
+    if (texto) parametros.set(campo, texto);
+  }
+  const consulta = parametros.toString();
+  return consulta ? `?${consulta}` : "";
+}
+
+export async function obtenerCatalogo(signal?: AbortSignal, filtros: FiltrosCatalogo = {}): Promise<JugueteCatalogo[]> {
+  const respuesta = await fetch(`${API_URL}/juguetes${consultaCatalogo(filtros)}`, { signal });
   if (!respuesta.ok) {
     throw new Error(`La API respondió ${respuesta.status}`);
   }
