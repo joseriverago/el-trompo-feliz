@@ -13,7 +13,12 @@ import type { Juguete } from '../juguetes/entities/juguete.entity.js';
 import { JuguetesService } from '../juguetes/juguetes.service.js';
 import { Pedido } from './entities/pedido.entity.js';
 import { EstadoPedido } from './enums/estado-pedido.enum.js';
-import { aPedidoDto, aPedidoResumenDto } from './pedido-dto.js';
+import {
+  aPedidoAdminDto,
+  aPedidoAdminResumenDto,
+  aPedidoDto,
+  aPedidoResumenDto,
+} from './pedido-dto.js';
 import {
   AJUSTAR_CARRITO,
   CARRITO_VACIO,
@@ -333,6 +338,69 @@ describe('PedidosService', () => {
       pedidos.find.mockResolvedValue([]);
 
       expect(await servicio.listarMisPedidos(CLIENTE)).toEqual([]);
+    });
+  });
+
+  describe('pedidos para el administrador (HU-14)', () => {
+    const consulta = {
+      relations: { detalles: true, usuario: true },
+      order: { creadoEn: 'DESC', id: 'DESC' },
+    };
+
+    it('lista los pedidos de todos los clientes, del más reciente al más antiguo', async () => {
+      pedidos.find.mockResolvedValue([]);
+
+      await servicio.listarTodos();
+
+      expect(pedidos.find).toHaveBeenCalledWith({ where: {}, ...consulta });
+    });
+
+    it('con un estado solo lista los pedidos en ese estado', async () => {
+      pedidos.find.mockResolvedValue([]);
+
+      await servicio.listarTodos(EstadoPedido.PAGADO);
+
+      expect(pedidos.find).toHaveBeenCalledWith({
+        where: { estado: EstadoPedido.PAGADO },
+        ...consulta,
+      });
+    });
+
+    it('la fila y el detalle incluyen el nombre del cliente, sin su correo', async () => {
+      const pedido = await servicio.generarPedido(CLIENTE, ENTREGA);
+      pedido.usuario = {
+        nombre: 'Rosa Quispe',
+        correo: 'rosa@ejemplo.pe',
+      } as Pedido['usuario'];
+
+      const fila = aPedidoAdminResumenDto(pedido);
+      const detalle = aPedidoAdminDto(pedido);
+
+      expect(fila.cliente).toBe('Rosa Quispe');
+      expect(detalle.cliente).toBe('Rosa Quispe');
+      expect(detalle.detalles).toHaveLength(2);
+      expect(detalle.entrega.distrito).toBe('San Miguel');
+      expect(JSON.stringify([fila, detalle])).not.toContain('rosa@ejemplo.pe');
+    });
+
+    it('abre cualquier pedido por su número', async () => {
+      const pedido = new Pedido();
+      pedidos.findOne.mockResolvedValue(pedido);
+
+      expect(
+        await servicio.obtenerParaAdministrador('TF-20261122-000001'),
+      ).toBe(pedido);
+      expect(pedidos.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { numero: 'TF-20261122-000001' } }),
+      );
+    });
+
+    it('responde 404 si el número no existe', async () => {
+      pedidos.findOne.mockResolvedValue(null);
+
+      await expect(
+        servicio.obtenerParaAdministrador('TF-20261122-000002'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

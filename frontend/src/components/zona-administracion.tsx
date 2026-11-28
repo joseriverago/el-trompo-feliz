@@ -11,6 +11,7 @@ import { useSesionObligatoria } from "@/lib/sesion-obligatoria";
 const SECCIONES = [
   { ruta: "/admin/juguetes", nombre: "Juguetes" },
   { ruta: "/admin/inventario", nombre: "Inventario" },
+  { ruta: "/admin/pedidos", nombre: "Pedidos" },
 ];
 
 function NavegacionAdministracion() {
